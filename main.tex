@@ -194,6 +194,25 @@ end
 
 This section gives the structure of ChiselFV, details the property description and algorithm engine support in ChiselFV and the methodology to perform formal verification on Chisel using ChiselFV.
 
+\subsection{Framework Structure}
+
+ChiselFV is based on Chisel and can be seen as an extension of formal verification in Chisel. The primary implementation uses Scala and enables Chisel modules to provide property descriptions and formal verification. The figure Fig \ref{fig: structure} shows the structure of ChiselFV.
+
+\begin{figure}[!htbp]
+    \begin{center}
+    \includegraphics[width=1\linewidth]{pics/structure.png}
+    \caption{ChiselFV Structure}
+    \label{fig: structure}
+    \end{center}
+\end{figure}
+
+As shown in Fig \ref{fig: structure}, ChiselFV is mainly an extension of Chisel's SystemVerilog generation and adds support for formal verification syntax. It also integrates the verification frontend and backend based on SymbiYosys, enabling one-key verification. The SystemVerilog generation is performed by calling the SystemVerilog generation process in Chisel. In contrast, for property descriptions, the compilation of the corresponding SystemVerilog Assertions (SVA) \cite{vijayaraghavan2005practical} script is performed, and some auxiliary circuits, in order to implement more complex property descriptions. And the configuration generator generates SymbiYosys-supported verification tasks configuration file .sby. 
+
+\subsubsection{Formal Extensions For Chisel}
+
+Hardware developers can construct hardware modules in Chisel and Chisel's compiler can compile Chisel modules to SystemVerilog code, and the starting point of our work is of injecting support for formal property descriptions in this stage.
+
+
 % \begin{table}[htbp]
 % \caption{Table Type Styles}
 % \begin{center}
