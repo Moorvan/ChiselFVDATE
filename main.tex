@@ -206,11 +206,108 @@ ChiselFV is based on Chisel and can be seen as an extension of formal verificati
     \end{center}
 \end{figure}
 
-As shown in Fig \ref{fig: structure}, ChiselFV is mainly an extension of Chisel's SystemVerilog generation and adds support for formal verification syntax. It also integrates the verification frontend and backend based on SymbiYosys, enabling one-key verification. The SystemVerilog generation is performed by calling the SystemVerilog generation process in Chisel. In contrast, for property descriptions, the compilation of the corresponding SystemVerilog Assertions (SVA) \cite{vijayaraghavan2005practical} script is performed, and some auxiliary circuits, in order to implement more complex property descriptions. And the configuration generator generates SymbiYosys-supported verification tasks configuration file .sby. 
-
-\subsubsection{Formal Extensions For Chisel}
+As shown in Fig \ref{fig: structure}, ChiselFV is mainly an extension of Chisel's SystemVerilog generation and adds support for formal verification syntax. It also integrates the verification frontend and backend based on SymbiYosys, enabling one-key verification. The SystemVerilog generation is performed by calling the SystemVerilog generation process in Chisel. In contrast, for property descriptions, the compilation of the corresponding SystemVerilog Assertions (SVA) script is performed, and some auxiliary circuits, in order to implement more complex property descriptions. And the configuration generator generates SymbiYosys-supported verification tasks configuration file .sby. 
 
 Hardware developers can construct hardware modules in Chisel and Chisel's compiler can compile Chisel modules to SystemVerilog code, and the starting point of our work is of injecting support for formal property descriptions in this stage.
+Besides the SystemVerilog generation, we also add support for generating SystemVerilog Assertions and verification configuration files.
+
+\begin{figure}[!htbp]
+    \begin{center}
+    \includegraphics[width=0.9\linewidth]{pics/ChiselFVSubstitute.png}
+    \caption{Technique in Chisel Compilation Extensions}
+    \label{fig: ChiselFVSubstitute}
+    \end{center}
+\end{figure}
+
+As shown in Fig \ref{fig: ChiselFVSubstitute}, we mainly use two techniques to extend the Chisel compilation process. The first is to use the Chisel hardware description abilities to implement the hardware code fragments that are equivalent to the property descriptions, and encapsulate them into functions, providing an interface to call. Through this way, we implement a part of the formal property description syntax support.
+% 例如后文中介绍的对于时序性质的支持，主要就是通过封装调用 Chisel 中提供的 \verb|ShiftRegister| 实例来实现的。
+Such as to achieve the support for the temporal property description, which introduced in the following section, we mainly try to encapsulate the \verb|ShiftRegister| instance provided by Chisel into a function, and provide an interface to call.
+
+% 利用函数封装，提供接口的方式有一定的局限性，它要求保证性质的描述可以用 Chisel 提供的硬件描述能力来实现，而我们采用的第二种方式，动态模版，则是更加灵活。
+Using function encapsulation, and providing interfaces, there is a certain limitation in it, which needs to ensure that the property description can be implemented by Chisel's hardware description abilities, and the second technique, dynamic template, is more flexible.
+% 动态模版主要依赖于 Chisel 提供的 \verb|BlackBox| 类，通过编写 SystemVerilog 代码片段，并通过让其继承 \verb|BlackBox| 将其封装为一个新的 Chisel 模块，其将在 Chisel 模块编译时进行注入。同时在编写 SystemVerilog 片段时可以将外部的参数传入到该片段中，从而在编译时，模版会自动应用这些参数进行动态地实例化。
+Dynamic template mainly depends on the \verb|BlackBox| class provided by Chisel. We write SystemVerilog code fragments and encapsulate them into a new Chisel module by inheriting \verb|BlackBox|, and they will be injected into the Chisel module during compilation. At the same time, we can pass external parameters to the code fragment, and the template will automatically apply them to the instance dynamically during compilation.
+
+% 最后，我们提供了验证配置文件的自动生成。
+Finally, we provide the automatic generation of verification configuration files.
+% ChiselFV 可以根据用户指定的验证方法和参数，生成对应的验证配置文件。这里主要采用了 sby 格式，它是由 SymbiYosys 支持。 ChiselFV 同时可以自动调用后端求解算法来根据具体的验证算法和参数，来对生成的模型进行验证。
+ChiselFV can generate the corresponding verification configuration file according to the verification algorithm and parameters specified by the user. Here we use .sby format, which is supported by SymbiYosys \cite{SymbiYosys}. ChiselFV can also automatically call the backend algorithm to verify the hardware model according to the specific verification algorithm and parameters.
+
+\subsection{Formal Description Syntax}
+
+% 下面我们给出在 ChiselFV 中支持的性质描述语法的定义。
+We give the definition of the property description syntax supported by ChiselFV in Fig \ref{fig: syntax}.
+The basic verification task in ChiselFV is: when the assumption defined in \verb|assume| block is true, whether the circuit assertion defined in \verb|assert| block is true or not. 
+
+\begin{figure}[!htbp]
+\begin{center}
+\begin{equation*}
+\begin{aligned}
+    \langle \text{ChiselData} \rangle &::= \text{circuit node in Chisel} \\
+    \langle \text{num} \rangle &::= \text{nonnegative integer} \\
+    \langle \text{anyConst} \rangle &::= \text{circuit node with any constant value} \\ & \qquad \text{defined by Chisel extension support } \\
+    \langle \text{valueExpr} \rangle &::= \text{past(} \langle \text{valueExpr} \rangle \text{, } \langle \text{num} \rangle \text{)} | \langle \text{ChiselData} \rangle \\ 
+    & \qquad | \langle \text{anyConst} \rangle \\
+    \langle \text{comparisonOp} \rangle &::= \text{`} \neq \text{'} \ | \text{`} = \text{'} \ | \ \text{`} < \text{'} \ |\ \text{`} \le \text{'} \ | \ \text{`} > \text{'} \ | \ \text{`} \ge \text{'}  \\
+    \langle \text{logicalOp} \rangle &::= \text{`} \&\&\text{'} | \ \text{`} || \text{'} \\
+    \langle \text{booleanExpr} \rangle &::=   \langle \text{valueExpr} \rangle \langle \text{comparisonOp} \rangle \langle \text{valueExpr} \rangle\\
+    & \qquad |\langle \text{booleanExpr} \rangle \langle \text{logicalOp} \rangle \langle \text{booleanExpr} \rangle \\
+    & \qquad | \text{`!'} \langle \text{booleanExpr} \rangle \\  
+    & \qquad |  \text{`true.B'} | \text{`false.B'} \\
+    \langle \text{assumption} \rangle &::= \text{assume(} \langle \text{booleanExpr} \rangle ) \\
+    \langle \text{assertion} \rangle     &::= \text{assert(} \langle \text{booleanExpr} \rangle \text{)} \\
+    & \qquad | \text{assertNextStepWhen(} \\ 
+    & \langle \text{booleanExpr} \rangle \text{, } \langle \text{booleanExpr} \rangle \text{)} \\ 
+    & \qquad | \text{assertAfterNStepWhen(} \\
+    & \langle \text{booleanExpr} \rangle \text{, } \langle \text{num} \rangle \text{, } \langle \text {booleanExpr} \rangle \text{)} \\
+    & \qquad | \text{assertAlwaysAfterNStep(} \\
+    & \langle \text{booleanExpr} \rangle \text{, } \langle \text{num} \rangle \text{, } \langle \text {booleanExpr} \rangle \text{)} \\
+\end{aligned}
+\end{equation*}
+\end{center}
+\caption{Syntax of Property Descriptions}
+\label{fig: syntax}
+\end{figure}
+
+% 对于电路的性质定义，基本上继承在 Chisel 中的语法，对于 Chisel 中返回值为 \verb|Bool| 的数据节点可以作为性质描述（定义为 \langle booleanExpr \rangle），它可以由数据变量之间的比较结果构成。
+For the property definition, the basic syntax is inherited from Chisel. It means that the data nodes with return type \verb|Bool| in Chisel can be defined as property descriptions (defined as $\langle \text{booleanExpr} \rangle$ here), which can be constructed by the comparison results between data variables (defined as $\langle \text{valueExpr} \rangle$ here).
+
+% 同时，我们还主要增强了对时序性质的描述支持，以及对自由常量的支持。接下来给出详细介绍。
+In addition, we mainly enhance the description support for temporal properties and free constants. The following gives a detailed introduction.
+
+\subsubsection{Immediate Assertions}
+% ChiselFV 支持基本的断言类型。
+ChiselFV supports the basic immediate assertion types:
+\begin{itemize}
+  % assume(<expr>): 当进行形式化验证时，所以的 assumeptions 都假设为真，从而可以用于手动缩小验证模型系统的规模。其中 |<expr>| 可以是 Chisel 中的任意返回为 |Bool| 的表达式。
+  \item[a.] \verb|assume(expr)|: \\ When performing formal verification, all assumptions are assumed to be true and can be used to shrink the verification model. The expression \verb|expr| can be any expression in Chisel that returns a \verb|Bool|.
+  % assert(<expr>): 断言即在形式化验证时检查的内容，模型检查引擎会尝试找到令其为 False 的反例，或者证明其正确性。注意到这里搜寻的空间是电路在第一次复位后，即不去考虑复位前的 Chaos 状态。
+  \item[b.] \verb|assert(expr)|: \\ Assertions are checked during formal verification. The model checker will try to find a counter-example to the assertion or prove its correctness. Note that the search space is the circuit state after the first reset, i.e., without considering the Chaos before the first reset.
+\end{itemize}
+
+% 时序性质定义
+\subsubsection{Temporal Assertions} 
+% ChiselFV 为时序相关的性质描述提供了丰富的支持。
+ChiselFV provides rich support for temporal property descriptions.
+\begin{itemize}
+    % 可以使用 past 语句获取某个信号在 |<num>| 时刻之前的值。
+    \item[a.] \verb|past(expr, num)|: \\ It can be used to get the value of a signal at time \verb|<num>| before the current time.
+    \item[b.] \verb|assertAfterNStepWhen(cond, num, expr)|: \\ 
+    It can be used to assume that when the \verb|cond| is true, the \verb|expr| signal is true in \verb|num| steps.
+    % 在 SVA 语法中，类似于语句 |cond -> ##num expr|.
+    In SVA syntax, it is similar to the statement \verb|cond -> ##num expr|.
+    Additionally, \verb|assertNextStepWhen(cond, expr)| is equivalent to \verb|assertAfterNStepWhen(cond, 1, expr)|.
+    \item[c.] \verb|assertAlwaysAfterNStep(cond, num, expr)|: \\
+    It can be used to assume that when the \verb|cond| is true, the \verb|expr| is always true after \verb|num| steps. In SVA syntax, it is similar to the statement \verb|cond -> ##[num:] expr|.
+\end{itemize}
+
+\subsubsection{Universal Quantification}
+% ChiselFV 提供了对于全称量词的支持。虽然在硬件电路中描述的是任意一个固定位长的数字，但是这仍然极大提高了对于性质的表达能力。在底层实现上，等价于一个类似于输入的节点，同时约束每个时刻保持值不变。在 ChiselFV 中可以调用 |anyconst(w)| 来得到一个任意位长为 |w| 的值。
+In ChiselFV, we provide support for universal quantification. Although we describe a fixed-width number in hardware circuits, this still greatly improves the expressiveness of property description. In the implementation, we treat it as a node equivalent to an input node and constrain the value to be the same at every clock cycle. In ChiselFV, we can call \verb|anyconst(w)| to get any value of fixed-width \verb|w|.
+
+\subsection{Algorithm Engines}
+In ChiselFV, we select three mainstreaming algorithms as backend engines: BMC \cite{biere1999symbolic}, k-induction \cite{sheeran2000checking} and PDR \cite{bradley2011sat} algorithm. 
+
 
 
 % \begin{table}[htbp]
