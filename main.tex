@@ -5,18 +5,18 @@
 \usepackage[english]{babel}
 \usepackage{amsthm}
 \usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amssymb,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage[fleqn]{amsmath}
 \usepackage[a4paper, total={184mm,239mm}]{geometry}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
-
 \usepackage{listings}
 \usepackage{stfloats}
 \usepackage{graphicx}
@@ -128,67 +128,69 @@ We also provide the workflow of formal verification on the Chisel level and deta
     We use the formal verification process of a multi-ported memory and a textbook five-stage pipeline design to illustrate this point.
 \end{itemize}
 
-This paper is organized into five sections. Section II uses Memory's example to explain the apparent advantages of formal verification on the Chisel level. Section III details ChiselFV and the workflow of formal verification on Chisel modules. Section IV describes how to verify multi-ported Memory using ChiselFV. Related work is in Section V. Section VI concludes.
+This paper is organized into four sections. 
+% Section II uses Memory's example to explain the apparent advantages of formal verification on the Chisel level.
+Section II details ChiselFV and the workflow of formal verification on Chisel modules. Section III describes how to verify multi-ported Memory using ChiselFV. Related work is in Section IV. Section V concludes.
 
-\section{A Motivating Example}
-In this section, we use a case to demonstrate the advantages of formal verification on the Chisel level.
+% \section{A Motivating Example}
+% In this section, we use a case to demonstrate the advantages of formal verification on the Chisel level.
 
-% 内存是硬件中重要的一个部分，在 Chisel 中，提供了直接构造内存的库，从而使得我们可以很方便地得到一个参数化大小和位宽的内存模块。
-Memory is an important part of hardware development, and Chisel provides a library to construct Memory directly, making it easy to get a memory module with a parameterized size and width.
-% 可以看到，我们使用 15 行代码得到参数化内存。
-We can quickly use 15 lines to get a parameterized memory in Chisel.
+% % 内存是硬件中重要的一个部分，在 Chisel 中，提供了直接构造内存的库，从而使得我们可以很方便地得到一个参数化大小和位宽的内存模块。
+% Memory is an important part of hardware development, and Chisel provides a library to construct Memory directly, making it easy to get a memory module with a parameterized size and width.
+% % 可以看到，我们使用 15 行代码得到参数化内存。
+% We can quickly use 15 lines to get a parameterized memory in Chisel.
 
-\begin{lstlisting}[language=scala, caption={A memory of size c and width w in Chisel}, label=mem]
-class Memory(c: Int, w: Int) extends Module {
-    val nw = log2Ceil(c)
-    val io = IO(new Bundle {
-        val wrEna = Input(Bool())
-        val wrData = Input(UInt(w.W))
-        val wrAddr = Input(UInt(nw.W))
-        val rdAddr = Input(UInt(nw.W))
-        val rdData = Output(UInt(w.W))
-    })
-    val mem = Mem(c, UInt(w.W))
-    when(io.wrEna) {
-        mem.write(io.wrAddr, io.wrData)
-    }
-    io.rdData := mem.read(io.rdAddr)
-}
-\end{lstlisting}
+% \begin{lstlisting}[language=scala, caption={A memory of size c and width w in Chisel}, label=mem]
+% class Memory(c: Int, w: Int) extends Module {
+%     val nw = log2Ceil(c)
+%     val io = IO(new Bundle {
+%         val wrEna = Input(Bool())
+%         val wrData = Input(UInt(w.W))
+%         val wrAddr = Input(UInt(nw.W))
+%         val rdAddr = Input(UInt(nw.W))
+%         val rdData = Output(UInt(w.W))
+%     })
+%     val mem = Mem(c, UInt(w.W))
+%     when(io.wrEna) {
+%         mem.write(io.wrAddr, io.wrData)
+%     }
+%     io.rdData := mem.read(io.rdAddr)
+% }
+% \end{lstlisting}
 
-As shown in Listing \ref{mem}, this is a parameterized memory implemented in Chisel. The module has two constructor parameters, \verb|c| and \verb|w|, where \verb|c| is the size of the Memory, and \verb|w| is the width of the data in the Memory. We define the IO of the module (line 3-9), Memory (line 10), and read / write access  (line 11-14). It is easy to construct such a parameterized module in Chisel, but it is hard in SystemVerilog to define a resizeable memory module.
+% As shown in Listing \ref{mem}, this is a parameterized memory implemented in Chisel. The module has two constructor parameters, \verb|c| and \verb|w|, where \verb|c| is the size of the Memory, and \verb|w| is the width of the data in the Memory. We define the IO of the module (line 3-9), Memory (line 10), and read / write access  (line 11-14). It is easy to construct such a parameterized module in Chisel, but it is hard in SystemVerilog to define a resizeable memory module.
 
-Next, we need to verify the correctness of the memory module. First, we need to describe the properties of the memory module in non-formal language: At any time, any address can write data, and after any time, if no write operation is performed on the address, the data read from the address should be the data written before. Then we need to convert the properties to a formal expression and package it with the memory module.
-% 然而在当前的 Chisel 的形式化描述支持中，无法将上面的性质定义出来，因为这里需要一个定义一个任意值来描述地址或数据。
-However, in the current Chisel formal support, the above properties cannot be defined, because here we need to define an arbitrary value to describe the address or data.
+% Next, we need to verify the correctness of the memory module. First, we need to describe the properties of the memory module in non-formal language: At any time, any address can write data, and after any time, if no write operation is performed on the address, the data read from the address should be the data written before. Then we need to convert the properties to a formal expression and package it with the memory module.
+% % 然而在当前的 Chisel 的形式化描述支持中，无法将上面的性质定义出来，因为这里需要一个定义一个任意值来描述地址或数据。
+% However, in the current Chisel formal support, the above properties cannot be defined, because here we need to define an arbitrary value to describe the address or data.
 
-% 我们可以试着在 Chisel 上设计模块，然后在生成的 SystemVerilog 代码上进行形式化验证。
-We can try to design the module on Chisel and then perform formal verification on the generated SystemVerilog code.
-% Chisel 模块可以很容易生成对应的 SystemVerilog 代码，例如可以使用 Listing 2 中的代码块来实例化一个 1KB 的 Memory 模块。
-Chisel modules can easily generate corresponding SystemVerilog code. For example, we can use the code in Listing \ref{initializememory} to instantiate a 1KB Memory module.
+% % 我们可以试着在 Chisel 上设计模块，然后在生成的 SystemVerilog 代码上进行形式化验证。
+% We can try to design the module on Chisel and then perform formal verification on the generated SystemVerilog code.
+% % Chisel 模块可以很容易生成对应的 SystemVerilog 代码，例如可以使用 Listing 2 中的代码块来实例化一个 1KB 的 Memory 模块。
+% Chisel modules can easily generate corresponding SystemVerilog code. For example, we can use the code in Listing \ref{initializememory} to instantiate a 1KB Memory module.
 
-\begin{lstlisting}[language=Scala, caption={A Chisel code fragment using to instantiate 1KB Memory module in SystemVerilog}, label={initializememory}]
-chisel3.stage.ChiselStage.emitSystemVerilog(new Memory(1024, 8))
-\end{lstlisting}
+% \begin{lstlisting}[language=Scala, caption={A Chisel code fragment using to instantiate 1KB Memory module in SystemVerilog}, label={initializememory}]
+% chisel3.stage.ChiselStage.emitSystemVerilog(new Memory(1024, 8))
+% \end{lstlisting}
 
-% 然而，利用 Chisel 生成的低层次 RTL 进行形式化验证是繁琐且几乎不可行的。
-However, using the low-level RTL generated by Chisel to perform formal verification is tedious and almost impossible. 
-% 首先，Chisel 生成的低层次 RTL 可读性十分差。15 行的 Chisel 代码实例化得到的 SystemVerilog 代码有 80 行。同时如 Listing 3 所示的，生成的 SystemVerilog 中的变量名会被污染。Chisel 的编译过程是不去考虑生成电路的可读性的，因此在生成的低层次 RTL 中分析验证是不可取的。
-First, the readability of the low-level RTL generated by Chisel is poor. The 15-line Chicodesode generates 80 lines of SystemVerilog code. As shown in Listing \ref{svcode}, the variable names in the generated SystemVerilog are polluted. Chisel's compilation process does not consider the readability of the generated circuit, so it is not appropriate to analyze and verify the generated low-level RTL.
-% 其次，对于生成的 SystemVerilog 内存模块，其大小和宽度都确定了，不能参数化地定义性质，所以当参数发生变化了，我们需要重新编写性质描述来验证，这是低效率的。
-Second, for the generated SystemVerilog memory module, its size and width are fixed, so we cannot parameterize the properties. When the parameters change, we need to rewrite the property description to verify it, which is inefficient. 
+% % 然而，利用 Chisel 生成的低层次 RTL 进行形式化验证是繁琐且几乎不可行的。
+% However, using the low-level RTL generated by Chisel to perform formal verification is tedious and almost impossible. 
+% % 首先，Chisel 生成的低层次 RTL 可读性十分差。15 行的 Chisel 代码实例化得到的 SystemVerilog 代码有 80 行。同时如 Listing 3 所示的，生成的 SystemVerilog 中的变量名会被污染。Chisel 的编译过程是不去考虑生成电路的可读性的，因此在生成的低层次 RTL 中分析验证是不可取的。
+% First, the readability of the low-level RTL generated by Chisel is poor. The 15-line Chicodesode generates 80 lines of SystemVerilog code. As shown in Listing \ref{svcode}, the variable names in the generated SystemVerilog are polluted. Chisel's compilation process does not consider the readability of the generated circuit, so it is not appropriate to analyze and verify the generated low-level RTL.
+% % 其次，对于生成的 SystemVerilog 内存模块，其大小和宽度都确定了，不能参数化地定义性质，所以当参数发生变化了，我们需要重新编写性质描述来验证，这是低效率的。
+% Second, for the generated SystemVerilog memory module, its size and width are fixed, so we cannot parameterize the properties. When the parameters change, we need to rewrite the property description to verify it, which is inefficient. 
 
-\begin{lstlisting}[language=Verilog, caption={A SystemVerilog code fragment generated by Chisel}, label={svcode}]
-...
-assign mem_MPORT_en = io_wrEna;
-assign io_rdData = mem_io_rdData_MPORT_data; // @[Memory.scala 19:13]
-always @(posedge clock) begin
-    if (mem_MPORT_en & mem_MPORT_mask) begin
-    mem[mem_MPORT_addr] <= mem_MPORT_data; // @[Memory.scala 14:16]
-    end
-end
-...
-\end{lstlisting}
+% \begin{lstlisting}[language=Verilog, caption={A SystemVerilog code fragment generated by Chisel}, label={svcode}]
+% ...
+% assign mem_MPORT_en = io_wrEna;
+% assign io_rdData = mem_io_rdData_MPORT_data; // @[Memory.scala 19:13]
+% always @(posedge clock) begin
+%     if (mem_MPORT_en & mem_MPORT_mask) begin
+%     mem[mem_MPORT_addr] <= mem_MPORT_data; // @[Memory.scala 14:16]
+%     end
+% end
+% ...
+% \end{lstlisting}
 
 \section{Formal Verification in Chisel}
 
@@ -307,6 +309,29 @@ In ChiselFV, we provide support for universal quantification. Although we descri
 
 \subsection{Algorithm Engines}
 In ChiselFV, we select three mainstreaming algorithms as backend engines: BMC \cite{biere1999symbolic}, k-induction \cite{sheeran2000checking} and PDR \cite{bradley2011sat} algorithm. 
+% 他们都是依赖于 SAT / SMT 求解器的典型模型检测算法。经过 ChiselFV 的前端，将硬件设计和性质描述转化为了迁移系统，和迁移系统的待验证性质。BMC 算法主要通过验证模型在 k 步之内是否安全，它只能去尝试发现模型是否有错，而无法给出模型正确性的证明；K-induction 算法则是尝试证明待验证性质是否是 k 步归纳不变式；PDR 算法则是不断增强性质，企图得到一个一步归纳不变式。后两者都可能给出系统正确性的证据，并且可以发现错误。这三种算法各有优劣，BMC 算法 和 k-induction 比较直观简单，但是并不能解决所有问题，PDR 较为复杂，作为补充可以解决更多的问题。 
+They are all typical model checking algorithms that rely on SAT/SMT solvers. After the front-end of ChiselFV, the hardware design and property definition are transformed into a transition system and the property to be verified. The BMC algorithm mainly verifies whether the model is safe within k steps. It can only try to find whether the model is wrong within some steps, but cannot prove the correctness of the model. The k-induction algorithm tries to prove that the property to be verified is an invariant of k steps. The PDR algorithm is to enhance the property step by step, trying to get an invariant of one step. The latter two may provide evidence of system correctness and can find errors. These three algorithms have their own advantages and disadvantages. The BMC algorithm and k-induction are more intuitive and simple, but they cannot solve all problems. The PDR algorithm is more complex and can solve more problems as a supplement.
+
+\begin{lstlisting}[language=scala, caption={A Code Clip to Call Formal Verification}, label=checker]
+Check.kInduction(() => new Memory, 20)
+\end{lstlisting}
+
+% 在 ChiselFV 中，可以通过简单的一行代码来完成对验证算法的调用。如 Listing 1 所示，这段代码将会对 Memory 模块中的性质描述进行验证，使用 k-induction 算法运行 20 步。
+In ChiselFV, we can call the verification algorithm with a simple line of code. As shown in Listing \ref{checker}, this code can verify the property defined in the Memory module using the k-induction algorithm for 20 steps.
+
+\begin{figure*}[!htbp]
+    \begin{center}
+    \includegraphics[width=0.8\linewidth]{pics/workflow.png}
+    \caption{Workflow of Designing and Formal Verifying a Circuit in Chisel with ChiselFV}
+    \label{fig: workflow}
+    \end{center}
+\end{figure*}
+
+\subsection{Methodology}
+
+% 接下来我们来讨论在 Chisel 下设计实现并形式化验证电路的工作流，在 ChiselFV 帮助下。
+Next, we discuss the workflow of designing and formal verifying a circuit in Chisel with the help of ChiselFV.
+
 
 
 
