@@ -332,6 +332,50 @@ In ChiselFV, we can call the verification algorithm with a simple line of code. 
 % 接下来我们来讨论在 Chisel 下设计实现并形式化验证电路的工作流，在 ChiselFV 帮助下。
 Next, we discuss the workflow of designing and formal verifying a circuit in Chisel with the help of ChiselFV.
 
+% 如图 \ref{fig: workflow} 所示，这个工作流的第一步是明确电路的设计需求，即需要分析清楚电路需要实现什么功能，进而可以将其作为我们的验证需求。同时需要做的是对电路的结构进行设计。
+As shown in Figure \ref{fig: workflow}, the first step of this workflow is to clarify the design requirements of the circuit, that is, to analyze what functions the circuit needs to implement, and then it can be used as our verification requirements. At the same time, we need to design the structure of the circuit.
+
+% 接下来是使用 Chisel 来实现参数化的硬件模块，并使用上面提供的支持来将性质描述实现。这一步是比较关键的，也是最为困难的一步。本文中我们不去讨论如何使用 Chisel 来实现硬件模块，因为这不是我们的研究重点。但是如何将自然语言描述的性质，利用 ChiselFV 提供的性质描述语法来形式化表达出来，仍然是比较不容易的。一方面依赖于形式化验证工程师的经验，另一方面同时也有一些固定的套路和技巧。我们的 ChiselFV 提供了足够强大的形式化性质描述能力，可以在 Case Studies 章节中体会到。
+Next, we use Chisel to implement the hardware module with parameters and use the support provided by ChiselFV to implement the properties description. This is the most challenging step in the process. This paper does not discuss using Chisel to implement hardware modules because this is not our primary research focus. However, how to express the properties described in natural language using ChiselFV's property description syntax is still tricky. On the one hand, it depends on the experience of formal verification engineers, and on the other hand, there are also some fixed patterns and tricks. Our ChiselFV provides sufficient formal property description capabilities, which will be more intuitive to show in the next section, Case Studies.
+
+% 使用 ChiselFV 对性质进行描述之后，直接调用形式化求解的函数即可进行验证。由于在我们的验证框架中，仍然使用 SystemVerilog 和 SVAs 作为其中的一个中间形式，意味着验证的对象必须要被实例化。将实例化的对象直接传入需要的验证方法中即可调用验证过程，并获得验证结果。验证结果可能是失败，那么说明该性质在电路中会被违反，同时会给出反例；也可能是成功，代表该性质会始终成立；也有可能返回未知，对于当前性质，该算法引擎无能为力，可以考虑换一个求解引擎，或者修改性质表达。
+After describing properties in ChiselFV, we can directly call the verification function to verify. Because we still use SystemVerilog and SVAs as the intermediate form in our verification framework, the object to be verified must be instantiated. We can directly pass the instantiated object to the verification method we need and get the verification result. The result may be a failure, which means that the property will be violated in the circuit, and we will get a counter-example; it may be a success, which means that the property will always be true; it may be unknown, which means that the current algorithm engine cannot solve the current property, we can consider changing the algorithm engine or modifying the property expression.
+
+\section{Case Studies}
+
+% 本节使用 ChiselFV 框架来形式化验证多端口内存和一个教科书中的典型五级流水设计。
+This section uses ChiselFV framework to make formal verification for multi-ported memory and a typical five-stage pipeline design in textbooks.
+
+\subsection{Multi-ported Memory}
+
+Multi-ported Memories are essential for high-performance parallel computation systems. VLIW and vector processors, CGRAs, DSPs, CMPs, and other processing systems often rely upon multi-ported memories for parallel access, hence higher performance \cite{abdelhadi2014modular}. 
+
+However, implementing multi-ported Memory is quite expensive, so FPGA manufacturers often only provide dual-ported block memory, and hardware engineers need to use the existing dual-ported block memory to design multi-ported Memory. The mainstream scheme is to use redundant dual-ported block memory, which is a two-dimensional block memory array, to implement multi-ported Memory, mainly divided into two classes. One class is based on using a small number of registers to store data, such as live-value-table (LVT) multi-ported Memory; another class is based on hiding the row number information in data, and the scheme is XOR-based multi-ported memory \cite{laforest2012multi}. 
+In our previous work \cite{xiang2022parameterized}, we have implemented three high-parameterized multi-ported memories in Chisel. Two of them are the ones we mentioned above, and the other is one-hot-encoding-based multi-ported Memory, whose code can be found in GitHub repositories \cite{mpMemory}.
+
+\begin{figure}[!htbp]
+    \begin{center}
+    \includegraphics[width=0.9\linewidth]{pics/mpmemoryio.png}
+    \caption{M write ports / N read ports Memory}
+    \label{fig: mpmemoryio}
+    \end{center}
+\end{figure}
+
+In this paper, our focus is not on the design itself, so we abstract the multi-ported Memory. We are concerned about whether the multi-ported Memory can meet our requirements, so its internal implementation can be shielded, and we are only concerned about its input and output. The basic IO of a multi-ported memory with m write ports, n read ports is shown in Fig \ref{fig: mpmemoryio}.
+
+% 同时，我们需要设计验证需求，即我们需要多端口内存能够做到什么。可以通过 Fig 6 直观看到，性质可以描述为：
+At the same time, we need to design the verification requirements, that is, what we need the multi-ported Memory to do. As shown in Fig \ref{fig: memverify}, the property can be described as: at any time, any write port $i$ can write $data_1$ to any address $addr$, and then after any time $t$, if there is no write operation to the same address during this period, $data_2$ read from the address should be the same as $data_1$.
+
+\begin{figure}[!htbp]
+    \begin{center}
+    \includegraphics[width=1\linewidth]{pics/memverify.png}
+    \caption{The property we need to verify in multi-ported memory}
+    \label{fig: memverify}
+    \end{center}
+\end{figure}
+
+% 接下来，需要使用 Chisel 对该模块进行实现，同时在 Chisel 上对性质进行定义。
+Next, we need to implement the module in Chisel, and define the property. 
 
 
 
