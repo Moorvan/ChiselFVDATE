@@ -376,8 +376,50 @@ At the same time, we need to design the verification requirements, that is, what
 
 % 接下来，需要使用 Chisel 对该模块进行实现，同时在 Chisel 上对性质进行定义。
 Next, we need to implement the module in Chisel, and define the property. 
+% Chisel 实现在仓库中，性质定义可以在 ChiselFV 项目的案例文件夹中找到。
+The Chisel implementation is in the repository \cite{mpMemory}, and the property definition can be found in the case folder of the ChiselFV project \cite{ChiselFV}.
+% 在这里，需要使用 |anyconst| 关键字构造一个任意值的 $addr$，使用一个寄存器 $data$ 存储写入 $mem_{addr}$ 的值。每当任意写端口对 $addr$ 地址发生写入时，将写入的值记录到寄存器 $data$ 中，每当任意读端口对 $addr$ 地址发生读入时，断言读出的结果和 $data$ 中的值相同。
+Here, we need to use the \verb|anyconst| keyword to construct an arbitrary value of $addr$, and use a register $data$ to store the value written to $mem_{addr}$. Whenever any write port writes to the $addr$ address, the written value is recorded in the register $data$, and whenever any read port reads from the $addr$ address, the read result is asserted to be the same as the value in $data$.
+% 简化了的对性质定义代码如 Listing 2 所示。其中还需要去增加上对不同端口不会同时对 addr 写入的假设。
+The simplified code for the property definition is shown in Listing \ref{memassert}. It is necessary to add the assumption that different ports do not write to $addr$ at the same time.
+% 模型和性质通过 k-induction 算法在 5 步内很快得到证明，详细代码在仓库中。
+The model and property are quickly proved by the k-induction algorithm within 5 steps, and the detailed code is in the repository.
+
+\begin{lstlisting}[language=scala, caption={Verification Code of Multi-ported Memory Module}, label=memassert]
+val addr = anyconst(addrW)
+val data = Reg(UInt(w.W))
+for (i <- 0 until m) {
+    when(io.wrAddr(i) === addr && io.wrEna(i) === true.B) {
+        data := io.wrData(i)
+    }
+}
+for (i <- 0 until n) {
+    when(io.rdAddr(i) === addr && hasWritten) {
+        assert(io.rdData(i) === data)
+    }
+}
+\end{lstlisting}
+
+\subsection{Five-stage Pipeline}
 
 
+
+\section{Related Work}
+This section presents a brief overview of the formal hardware verification in hardware.
+
+Formal verification is divided into two directions: Theorem Proving \cite{Hoare69}, and Model Checking \cite{clarke2018handbook}. Theorem Proving relies on high order logic and uses mathematical structures to build formulas that correspond to the system. And the verification process is the evaluation of these formulas. However, it is difficult to automate. This means that the verification process needs to be assisted by engineers. Model Checking is a method that can be fully automated, but it has the problem of state explosion. To counter this problem, new technologies are being introduced to reduce the state space of the transition system.
+
+At the turn of the last century, a new generation of Boolean satisfiability (SAT) solvers such as Grasp \cite{SilvaS96} and Chaff \cite{MoskewiczMZZM01} brought about a leap in the performance and scalability of satisfiability checkers for propositional formulas, and the hardware model checking technique particularly benefited from the advances of SAT solvers \cite{vizel2015boolean}. At the same time, Satisfiability Modulo Theories (SMT) \cite{barrett2018satisfiability} has also been rapidly evolving. 
+
+Therefore, many model checking algorithms based on SAT/SMT solvers have been widely applied in hardware verification, such as BMC \cite{BiereCCZ99}, k-induction \cite{tinelli2012smt}, IC3/PDR \cite{Bradley11}, etc.
+
+Besides the algorithms, the easy-to-use, scalable, high-performance, and available in industrial environments hardware model checking tools are also an important research direction. Aina Niemetz, Clifford Wolf's work \cite{niemetz2018btor2} proposed BtorMC, a model checker built on Boolector. BtorMC supports the format Btor2, a new word-level model-checking and witness format, and also proposed by them. Pono, a flexible and extensible SMT-based model checker, is designed to be both a research platform for developing and improving model checking algorithms, as well as a performance-competitive tool that can be used for academic and industry verification applications \cite{mann2021pono}. It supports the verification format Btor2 and SMV \cite{clarke1996symbolic}. SymbiYosys is an open-source frontend driver program for Yosys-based formal hardware verification flow \cite{SymbiYosys}, and its team has already released a commercial EDA tool for hardware verification, Tabby CAD Suite. SymbiYosys supports direct verification of assertions in SystemVerilog.
+
+\section{Conclusion and Future Work}
+
+In this paper, we introduce ChiselFV, a formal verification framework for Chisel. ChiselFV provides a workflow for formal verification of Chisel modules, which can be combined with Chisel-based hardware design development to significantly improve the efficiency and simplicity of hardware development and verification. ChiselFV provides strong property description support, which enables verification of verification work that was previously done at the low-level RTL level, but can be done in Chisel, improving the level of hardware verification.
+
+In the future, we will provide more advanced support for Chisel's formal verification. Currently, our verification backend is to convert it to SVAs and then perform verification, which means we cannot symbolize the module's parameters in Chisel, and we must instantiate it before verification. We will further develop a verification backend for Chisel, which will be able to symbolize the parameters of the modules for formal verification. We are also actively researching new verification algorithms, which we hope to develop into high-efficiency verification algorithms and integrate them into ChiselFV.
 
 % \begin{table}[htbp]
 % \caption{Table Type Styles}
