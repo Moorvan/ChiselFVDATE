@@ -351,7 +351,7 @@ This section uses ChiselFV framework to make formal verification for multi-porte
 Multi-ported Memories are essential for high-performance parallel computation systems. VLIW and vector processors, CGRAs, DSPs, CMPs, and other processing systems often rely upon multi-ported memories for parallel access, hence higher performance \cite{abdelhadi2014modular}. 
 
 However, implementing multi-ported Memory is quite expensive, so FPGA manufacturers often only provide dual-ported block memory, and hardware engineers need to use the existing dual-ported block memory to design multi-ported Memory. The mainstream scheme is to use redundant dual-ported block memory, which is a two-dimensional block memory array, to implement multi-ported Memory, mainly divided into two classes. One class is based on using a small number of registers to store data, such as live-value-table (LVT) multi-ported Memory; another class is based on hiding the row number information in data, and the scheme is XOR-based multi-ported memory \cite{laforest2012multi}. 
-In our previous work \cite{xiang2022parameterized}, we have implemented three high-parameterized multi-ported memories in Chisel. Two of them are the ones we mentioned above, and the other is one-hot-encoding-based multi-ported Memory, whose code can be found in GitHub repositories \cite{mpMemory}.
+Base on the previous work \cite{xiang2022parameterized}, we implement three high-parameterized multi-ported memories in Chisel. Two of them are the ones we mentioned above, and the other is one-hot-encoding-based multi-ported Memory, whose code can be found in GitHub repositories \cite{mpMemory}.
 
 \begin{figure}[!htbp]
     \begin{center}
@@ -401,6 +401,70 @@ for (i <- 0 until n) {
 \end{lstlisting}
 
 \subsection{Five-stage Pipeline}
+% 在经典的体系结构教科书中给出了一个简单五级流水线。
+In the classic architecture textbooks \cite{patterson2017computer}, a simple five-stage pipeline is given. 
+% 这个处理器设计了五级流水，分别为取指、译码、执行、访存、写回。
+This processor designs a five-stage pipeline, which is divided into instruction fetch and decode, execution, memory access and write back. 
+% 它实现了 RISC-V 指令集中的 ｜ld|，|sd|, |add|, |beq| 四个典型指令。
+It implements four typical instructions in the RISC-V instruction set, including \verb|ld|, \verb|sd|, \verb|add|, and \verb|beq|.
+% 通过转发和 stalling 的方式来避免数据冒险，在分支预测上，采取假定分支不会被采用的方式来处理控制冒险，如果预测错误，则会在中间插入一条 ｜nop｜ 指令来使得流水线保持正确。
+It avoids data hazards by forwarding and stalling. On branch prediction, it adopts the way of assuming that the branch will not be taken to handle control hazards. If the prediction is wrong, a \verb|nop| instruction will be inserted in the middle to keep the pipeline correct.
+% 书中采用 Verilog 语言对该处理器进行了具体的实现。在我们的工作中，我们首先使用 Chisel 实现了处理器，然后使用 ChiselFV 框架对其进行了形式化验证，实现和验证的代码都在 GitHub 仓库中。
+The book uses the Verilog language to implement the processor. In our work, we first use Chisel to implement the processor, and then use the ChiselFV framework to formally verify it. The implementation and verification code are in the GitHub repository \cite{riscvFvChisel}.
+
+% 我们的验证方案主要受启发于 RISC-V Formal Verification Framework，他们是在 SystemVerilog 层次上提供了一套验证 RISC-V 处理器的框架，使用 SVA 定义性质，然后利用验证工具进行验证。
+Our verification solution is mainly inspired by the RISC-V Formal Verification Framework \cite{riscv-formal}. They provide a framework for verifying RISC-V processors at the SystemVerilog level, using SVA to define properties, and then using verification tools to verify them.
+% 我们尝试将 RISC-V Formal 验证框架利用 ChiselFV 迁移到 Chisel 层次，从而实现对 RISC-V 处理器的形式化验证。
+We try to migrate the RISC-V Formal verification framework to the Chisel level by ChiselFV, so as to formally verify the RISC-V processor.
+
+% Chisel 版本 RISC-V Formal 框架图
+\begin{figure}[!htbp]
+    \begin{center}
+    \includegraphics[width=1\linewidth]{pics/riscvFvChisel.png}
+    \caption{Chisel Version RISC-V Formal Verification Framework}
+    \label{fig: riscvFv}
+    \end{center}
+\end{figure}
+
+% 验证方案方案如图 7 所示，流水线处理器实现在 Chip 模块中，Chip 模块需要向外提供 RVFI 接口，输出每条指令执行过程中的关键信息。
+The verification solution is shown in Figure \ref{fig: riscvFv}. The pipeline processor is implemented in the Chip module, and the Chip module needs to provide the RISC-V Formal Interface (RVFI) to output the key information of each instruction execution process. 
+
+% RVFI 接口定义如 Listing 3 所示。
+The RVFI interface definition is shown in Listing \ref{rvfiio}.
+% 对于每条指令，拿到其指令的内容，解码的结果，执行前后 PC 寄存器的更新，源操作数，目标操作数，以及指令执行前寄存器的状态。
+For each instruction, we get its instruction content, decoding result, PC register update before and after execution, source operands, destination operands, and register state before instruction execution.
+% 从 Chip 中提取出 RVFI 是验证实现中关键的一步，需要使用 ChiselFV 中提供的时序能力来获取每条指令的执行过程中的信息，在执行完成时同时进行输出。
+Extracting RVFI from Chip is a key step in the verification implementation. We need to use the temporal ability provided by ChiselFV to get the information of each instruction execution process, and output it at the same time when the execution is completed.
+
+% RVFI 定义
+\begin{lstlisting}[language=scala, caption={RVFI Definition}, label=rvfiio]
+class RVFI_IO extends Bundle {
+    val valid     = Output(Bool())
+    val insn      = Output(UInt(32.W))
+    val pc_rdata  = Output(UInt(64.W))
+    val pc_wdata  = Output(UInt(64.W))
+    val rs1_addr  = Output(UInt(5.W))
+    val rs2_addr  = Output(UInt(5.W))
+    val rs1_rdata = Output(UInt(64.W))
+    val rs2_rdata = Output(UInt(64.W))
+    val rd_addr   = Output(UInt(5.W))
+    val rd_wdata  = Output(UInt(64.W))
+    val mem_addr  = Output(UInt(32.W))
+    val mem_rdata = Output(UInt(64.W))
+    val mem_wdata = Output(UInt(64.W))
+    val regs      = Vec(32, Output(UInt(64.W)))
+}
+\end{lstlisting}
+
+% 接下来，需要定义 Spec 模块和 Check 模块。对于每个需要验证的指令实现或者小的性质，都可以通过单独一个 Check 模块来定义，其输入为 RVFI，通过对 RVFI 信号的分析，得出指令执行后正确的状态信息，通过 SpecOut 接口输出。定义 Check 模块，输入为来自 Chip 的 RVFI 和 来自某个 Spec 的 SpecOut，断言两份信号的一致性，从而对处理器的各个指令执行正确性进行验证。
+Next, we need to define the Spec module and Check modules. For each instruction or small property that needs to be verified, a separate Check module can be defined. Its input is RVFI, and output is SpecOut, which is the correct state information after the instruction execution. Define the Check module, the input is RVFI from the Chip and SpecOut from some Spec, and assert the consistency of the two signals to verify the correctness of the execution of each instruction of the processor.
+% 在目前的版本中，我们实现了对 |add|、|ld|、｜beq| 指令执行功能正确性的验证。
+In the current version, we have implemented the verification of the execution function correctness of the \verb|add|, \verb|ld|, and \verb|beq| instructions.
+% 具体的验证设计在 GitHub 仓库中可以找到。
+The specific verification design can be found in the GitHub repository.
+
+% 最终，我们发现了该处理器在设计上有一个错误。ChiselFV 给出了一个执行会发生错误的执行路径。对于 |beq| 指令，需要比较两个源操作数的大小，但是在原来的设计中，这两个源操作数并没有考虑到数据冒险，而是直接从寄存器中拿到的数据，这是不合理的。之后，我们在 Chisel 版本上修改了设计，并通过了相关的验证。
+Eventually, we found that there was an error in the design of this processor. ChiselFV gave an execution path that would fail. For the \verb|beq| instruction, we need to compare the value of the two source operands, but in the original design, these two source operands were not considered to be data hazards, but were directly taken from the register data, which is unreasonable. Later, we modified the design on the Chisel version and passed the relevant verification check.
 
 
 
