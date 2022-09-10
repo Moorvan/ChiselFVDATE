@@ -1,6 +1,6 @@
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
-% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment on it.
 
 \usepackage[english]{babel}
 \usepackage{amsthm}
@@ -94,26 +94,26 @@ framexleftmargin=15pt}
 \section{Introduction}
 % 硬件设计需求复杂，Chisel 出现，Chisel 优势
 Over the past several years, hardware design has grown to be ever more and more complex. The increased demand for high-performance computing systems has led to a larger need for domain-specific hardware accelerators \cite{dally2020domain}.
-The dominant traditional hardware description languages (HDLs), Verilog and VHDL, were initially developed as hardware simulation languages and were only later adopted as a basis for hardware synthesis. So these languages lack the powerful abstraction facilities that are common in modern software languages, which leads to low productivity because it is difficult to reuse components.
-Chisel \cite{bachrach2012chisel}, a Scala-embedded hardware construction language, was introduced in order to lift digital circuit description to a more software-like high-level language \cite{dobis2021chiselverify}.
+The dominant traditional hardware description languages (HDLs), Verilog and VHDL, were initially developed as hardware simulation languages and were only later adopted as a basis for hardware synthesis. So these languages lack the powerful abstraction facilities common in modern software languages, leading to low productivity because it is difficult to reuse components.
+Chisel \cite{bachrach2012chisel}, a Scala-embedded hardware construction language, was introduced to lift digital circuit description to a more software-like high-level language \cite{dobis2021chiselverify}.
 Chisel attempts to solve these problems by providing functional and object-oriented programming support. With these features, Chisel supports advanced hardware design using highly parameterized generators and improves the abstraction level of hardware design. However, Chisel lacks the powerful and easy-to-use formal verification support that is mature in traditional HDLs.
 
 % 硬件验证必要性，Chisel 上的形式化验证工作不足 + 无法直接迁移
-In hardware development, because of the high cost of trial and error, verifying the correctness of the design is essential, especially for trusted systems which are constantly dealing with human lives or may cause a massive loss if an unexpected event occurs. Therefore, we need to use many test cases to simulate the design to find bugs and use formal methods to ensure correctness. There are many mature verification methods in traditional hardware languages. However, in Chisel, the work of formal verification is still limited, and the previous workflow for low level RTL cannot be migrated to Chisel easily.
+In hardware development, because of the high cost of trial and error, verifying the correctness of the design is essential, especially for trusted systems that are constantly dealing with human lives or may cause a massive loss if an unexpected event occurs. Therefore, we need to use many test cases to simulate the design to find bugs and use formal methods to ensure correctness. There are many mature verification methods in traditional hardware languages. However, in Chisel, formal verification work is still limited, and the previous workflow for low-level RTL cannot be migrated to Chisel easily.
 
 % Chisel 上的验证工作：ChiselVerify + 官方的 Chisel Formal 支持。相比成熟的 HDLs 的形式化支持，这些都是比较原始的。 
 Currently, there is some work on the Chisel level to verify the correctness of the design. ChiselVerify is a verification framework inspired by Universal Verification Method(UVM) \cite{mehta2018uvm} and implemented on the Chisel level and supports both coverage-oriented and constrained random verification (CRV) flows \cite{dobis2021chiselverify}. However, ChiselVerify only focuses on applying software testing techniques to hardware verification.
 Recently, Berkeley provided Chisel developers with an easy way to formally verify the designs \cite{dobis2021open}. They added a formal backend to the FIRRTL compiler, which converts a high-level intermediate representation (IR) into a normalized structural representation. The backend can translate FIRRTL expressions to the bit-vector expression language defined by the SMTLib format \cite{barrett2010smt}, and then use the Z3 solver \cite{moura2008z3} to execute the Bounded Model Checking (BMC) algorithm \cite{biere2009bounded}.
 % 然而目前它支持的性质描述十分有限，仅支持对返回为 Boolean 类型值的表达式断言，而且支持的验证方法也只有 BMC。和现有的低层次 HDL 的形式化支持相比，它显得十分初级。
-However, the current support for property description is very limited. It only supports assertions on expressions that return Boolean values, and the verification algorithm it supports is only BMC. Compared with the existing formal support for other HDLs, they are very primitive.
+However, the current support for property description is minimal. It only supports assertions on expressions that return Boolean values, and the verification algorithm it supports is only BMC. Compared with the existing formal support for other HDLs, they are very primitive.
 
 % 传统 HDLs 中的方案中，SVA 描述强大，验证方案丰富。但是迁移有问题：生成的代码可读性差，参数化。
 % 在传统的硬件设计语言中，有着成熟的硬件验证技术支持，但是无法直接迁移到 Chisel 中。
-Traditional HDLs have mature hardware verification techniques, but they cannot be directly migrated to Chisel.
+Traditional HDLs have mature hardware verification techniques but cannot be directly migrated to Chisel.
 % 例如，可以使用 SystemVerilog Assertions（SVA）来描述性质。它支持复杂的时序性质描述。它可以和 SystemVerilog 代码一起被 Yosys 工具综合，转化为迁移系统，使用 SAT / SMT 求解器为基础的各种模型检测算法求解。
-For example, SystemVerilog Assertions (SVA) \cite{vijayaraghavan2005practical} can be used to describe properties. SVA is a essentially a language construct which provides a powerful way to write constraints, checkers, and cover points for hardware designs. It supports complex temporal property descriptions. It can be synthesized with SystemVerilog code by Yosys \cite{wolf2016yosys} and converted to a transition system, which can be solved by various model checking algorithms based on SAT/SMT solvers.
+For example, SystemVerilog Assertions (SVA) \cite{vijayaraghavan2005practical} can be used to describe properties. SVA is a language construct that provides a powerful way to write constraints, checkers, and cover points for hardware designs. It supports complex temporal property descriptions. It can be synthesized with SystemVerilog code by Yosys \cite{wolf2016yosys} and converted to a transition system, which can be solved by various model checking algorithms based on SAT/SMT solvers.
 % 目前 Chisel 语言主要用于在高层构造硬件生成器，然后生成 SystemVerilog 代码用于综合。在生成 SystemVerilog 中定义性质描述时不可行的，一方面生成的 SystemVerilog 代码可读性很差，设计复杂时，很难找到 Chisel 中对应的信号，因此很难在这里添加性质描述；同时，Chisel 的优势在于高度参数化，但是在 SystemVerilog 层次已经完成了 Chisel 模块的实例化，因此需要在每次实例化时重新定义性质，这是不可取的。
-Currently, Chisel is mainly used to construct hardware generators at the high level and then generate SystemVerilog code for synthesis. It is not feasible to define property descriptions in SystemVerilog, because the generated SystemVerilog code is difficult to read, making it hard to find the corresponding signals in Chisel when the design is complex. In addition, Chisel's advantage is high parameterization, but in the generated SystemVerilog, the module instantiation has been completed, so the property needs to be redefined every time the module is instantiated, which is not desirable.
+Currently, Chisel is mainly used to construct hardware generators at the high level and then generate SystemVerilog code for synthesis. It is not feasible to define property descriptions in SystemVerilog because the generated SystemVerilog code is difficult to read, making it hard to find the corresponding signals in Chisel when the design is complex. In addition, Chisel's advantage is high parameterization, but in the generated SystemVerilog, the module instantiation has been completed, so the property needs to be redefined every time the module is instantiated, which is not desirable.
 
 % 所以我们的工作就是把传统 HDLs 中的验证能力在 Chisel 层次进行实现
 % 因此我们选择直接在 Chisel 上进行性质定义，并且致力于使 Chisel 具有和传统 HDLs 相同能力的形式化支持。
@@ -122,8 +122,8 @@ Our main contribution in this paper is to propose ChiselFV, a formal verificatio
 We also provide the workflow of formal verification on the Chisel level and detailed application of ChiselFV on the actual case. The contribution of this work is as follows:
 
 \begin{itemize}
-    \item \textbf{ChiselFV.} We propose a formal verification framework for Chisel, which can be used to describe hardware properties on the Chisel level. And we integrated the verification algorithm engine to perform verification in one-click. At the same time, our ChiselFV has the ability to describe the temporal properties and the ability to describe the free constant definition, which greatly enhanced the hardware properties description capability.
-    \item \textbf{High-efficiency verification flow.} We propose a hardware verification workflow based on ChiselFV. With ChiselFV, we can synchronize the hardware properties description with the agile development process, thereby avoiding the design of complicated hardware properties in the low-level hardware. The hardware verification flow can be integrated into the agile hardware development process seaminglessly. 
+    \item \textbf{ChiselFV.} We propose a formal verification framework for Chisel, which can be used to describe hardware properties on the Chisel level. And we integrated the verification algorithm engine to perform verification in one click. At the same time, our ChiselFV can describe the temporal properties and free constant definition, which greatly enhances the hardware properties description capability.
+    \item \textbf{High-efficiency verification flow.} We propose a hardware verification workflow based on ChiselFV. With ChiselFV, we can synchronize the hardware properties description with the agile development process, thereby avoiding the design of complicated hardware properties in low-level hardware. The hardware verification flow can seamlessly integrate into the agile hardware development process. 
     % 我们用多端口内存的正确性验证和一个教科书上的五级流水线设计验证来说明这点。
     We use the formal verification process of a multi-ported memory and a textbook five-stage pipeline design to illustrate this point.
 \end{itemize}
@@ -208,9 +208,12 @@ ChiselFV is based on Chisel and can be seen as an extension of formal verificati
     \end{center}
 \end{figure}
 
-As shown in Fig \ref{fig: structure}, ChiselFV is mainly an extension of Chisel's SystemVerilog generation and adds support for formal verification syntax. It also integrates the verification frontend and backend based on SymbiYosys, enabling one-key verification. The SystemVerilog generation is performed by calling the SystemVerilog generation process in Chisel. In contrast, for property descriptions, the compilation of the corresponding SystemVerilog Assertions (SVA) script is performed, and some auxiliary circuits, in order to implement more complex property descriptions. And the configuration generator generates SymbiYosys-supported verification tasks configuration file .sby. 
+As shown in Fig \ref{fig: structure}, ChiselFV is mainly an extension of Chisel's SystemVerilog generation and adds support for formal verification syntax. It also integrates the verification frontend and backend based on SymbiYosys, enabling one-key verification. The SystemVerilog generation is performed by calling the SystemVerilog generation process in Chisel. 
+% 对于性质描述，ChiselFV 会将在 Chisel 定义的性质编译为 SVA 代码，对于复杂的性质描述，则会生成一些辅助电路来完成性质定义。
+For property descriptions, ChiselFV will compile the properties defined in Chisel into SVA code. Some auxiliary circuits will be generated to complete the property definition for complex property descriptions.
+And the configuration generator generates SymbiYosys-supported verification tasks configuration file .sby. 
 
-Hardware developers can construct hardware modules in Chisel and Chisel's compiler can compile Chisel modules to SystemVerilog code, and the starting point of our work is of injecting support for formal property descriptions in this stage.
+Hardware developers can construct hardware modules in Chisel, and Chisel's compiler can compile Chisel modules to SystemVerilog code. The starting point of our work is to inject support for formal property descriptions in this stage.
 Besides the SystemVerilog generation, we also add support for generating SystemVerilog Assertions and verification configuration files.
 
 \begin{figure}[!htbp]
@@ -221,14 +224,14 @@ Besides the SystemVerilog generation, we also add support for generating SystemV
     \end{center}
 \end{figure}
 
-As shown in Fig \ref{fig: ChiselFVSubstitute}, we mainly use two techniques to extend the Chisel compilation process. The first is to use the Chisel hardware description abilities to implement the hardware code fragments that are equivalent to the property descriptions, and encapsulate them into functions, providing an interface to call. Through this way, we implement a part of the formal property description syntax support.
+As shown in Fig \ref{fig: ChiselFVSubstitute}, we mainly use two techniques to extend the Chisel compilation process. The first is to use the Chisel hardware description abilities to implement the hardware code fragments equivalent to the property descriptions and encapsulate them into functions, providing an interface to call. This way, we implement a part of the formal property description syntax support.
 % 例如后文中介绍的对于时序性质的支持，主要就是通过封装调用 Chisel 中提供的 \verb|ShiftRegister| 实例来实现的。
-Such as to achieve the support for the temporal property description, which introduced in the following section, we mainly try to encapsulate the \verb|ShiftRegister| instance provided by Chisel into a function, and provide an interface to call.
+Such as to achieve the support for the temporal property description introduced in the following section, we mainly try to encapsulate the \verb|ShiftRegister| instance provided by Chisel into a function and provide an interface to call.
 
 % 利用函数封装，提供接口的方式有一定的局限性，它要求保证性质的描述可以用 Chisel 提供的硬件描述能力来实现，而我们采用的第二种方式，动态模版，则是更加灵活。
-Using function encapsulation, and providing interfaces, there is a certain limitation in it, which needs to ensure that the property description can be implemented by Chisel's hardware description abilities, and the second technique, dynamic template, is more flexible.
+Using function encapsulation and providing interfaces, there is a specific limitation, which needs to ensure that Chisel's hardware description abilities can implement the property description, and the second technique, dynamic template, is more flexible.
 % 动态模版主要依赖于 Chisel 提供的 \verb|BlackBox| 类，通过编写 SystemVerilog 代码片段，并通过让其继承 \verb|BlackBox| 将其封装为一个新的 Chisel 模块，其将在 Chisel 模块编译时进行注入。同时在编写 SystemVerilog 片段时可以将外部的参数传入到该片段中，从而在编译时，模版会自动应用这些参数进行动态地实例化。
-Dynamic template mainly depends on the \verb|BlackBox| class provided by Chisel. We write SystemVerilog code fragments and encapsulate them into a new Chisel module by inheriting \verb|BlackBox|, and they will be injected into the Chisel module during compilation. At the same time, we can pass external parameters to the code fragment, and the template will automatically apply them to the instance dynamically during compilation.
+Dynamic template mainly depends on the \verb|BlackBox| class provided by Chisel. We write SystemVerilog code fragments and encapsulate them into a new Chisel module by inheriting \verb|BlackBox|, which will be injected into the Chisel module during compilation. At the same time, we can pass external parameters to the code fragment, and the template will automatically apply them to the instance dynamically during compilation.
 
 % 最后，我们提供了验证配置文件的自动生成。
 Finally, we provide the automatic generation of verification configuration files.
@@ -238,8 +241,8 @@ ChiselFV can generate the corresponding verification configuration file accordin
 \subsection{Formal Description Syntax}
 
 % 下面我们给出在 ChiselFV 中支持的性质描述语法的定义。
-We give the definition of the property description syntax supported by ChiselFV in Fig \ref{fig: syntax}.
-The basic verification task in ChiselFV is: when the assumption defined in \verb|assume| block is true, whether the circuit assertion defined in \verb|assert| block is true or not. 
+We define the property description syntax supported by ChiselFV in Fig \ref{fig: syntax}.
+The primary verification task in ChiselFV is: when the assumption defined in \verb|assume| block is true and whether the circuit assertion defined in \verb|assert| block is true or not. 
 
 \begin{figure}[!htbp]
 \begin{center}
@@ -305,12 +308,12 @@ ChiselFV provides rich support for temporal property descriptions.
 
 \subsubsection{Universal Quantification}
 % ChiselFV 提供了对于全称量词的支持。虽然在硬件电路中描述的是任意一个固定位长的数字，但是这仍然极大提高了对于性质的表达能力。在底层实现上，等价于一个类似于输入的节点，同时约束每个时刻保持值不变。在 ChiselFV 中可以调用 |anyconst(w)| 来得到一个任意位长为 |w| 的值。
-In ChiselFV, we provide support for universal quantification. Although we describe a fixed-width number in hardware circuits, this still greatly improves the expressiveness of property description. In the implementation, we treat it as a node equivalent to an input node and constrain the value to be the same at every clock cycle. In ChiselFV, we can call \verb|anyconst(w)| to get any value of fixed-width \verb|w|.
+In ChiselFV, we provide support for universal quantification. Although we describe a fixed-width number in hardware circuits, this still greatly improves the expressiveness of property description. In the implementation, we treat it as a node equivalent to an input node and constrain the same value at every clock cycle. In ChiselFV, we can call \verb|anyconst(w)| to get any value of fixed-width \verb|w|.
 
 \subsection{Algorithm Engines}
 In ChiselFV, we select three mainstreaming algorithms as backend engines: BMC \cite{biere1999symbolic}, k-induction \cite{sheeran2000checking} and PDR \cite{bradley2011sat} algorithm. 
 % 他们都是依赖于 SAT / SMT 求解器的典型模型检测算法。经过 ChiselFV 的前端，将硬件设计和性质描述转化为了迁移系统，和迁移系统的待验证性质。BMC 算法主要通过验证模型在 k 步之内是否安全，它只能去尝试发现模型是否有错，而无法给出模型正确性的证明；K-induction 算法则是尝试证明待验证性质是否是 k 步归纳不变式；PDR 算法则是不断增强性质，企图得到一个一步归纳不变式。后两者都可能给出系统正确性的证据，并且可以发现错误。这三种算法各有优劣，BMC 算法 和 k-induction 比较直观简单，但是并不能解决所有问题，PDR 较为复杂，作为补充可以解决更多的问题。 
-They are all typical model checking algorithms that rely on SAT/SMT solvers. After the front-end of ChiselFV, the hardware design and property definition are transformed into a transition system and the property to be verified. The BMC algorithm mainly verifies whether the model is safe within k steps. It can only try to find whether the model is wrong within some steps, but cannot prove the correctness of the model. The k-induction algorithm tries to prove that the property to be verified is an invariant of k steps. The PDR algorithm is to enhance the property step by step, trying to get an invariant of one step. The latter two may provide evidence of system correctness and can find errors. These three algorithms have their own advantages and disadvantages. The BMC algorithm and k-induction are more intuitive and simple, but they cannot solve all problems. The PDR algorithm is more complex and can solve more problems as a supplement.
+They are all typical model checking algorithms that rely on SAT/SMT solvers. After the front-end of ChiselFV, the hardware design and property definition are transformed into a transition system, and the property is to be verified. The BMC algorithm mainly verifies whether the model is safe within k steps. It can only try to find whether the model is wrong within some steps but cannot prove the correctness of the model. The k-induction algorithm tries to confirm that the property to be verified is an invariant of k steps. The PDR algorithm is to enhance the property step by step, trying to get an invariant of one step. The latter two may provide evidence of system correctness and can find errors. These three algorithms have their advantages and disadvantages. The BMC algorithm and k-induction are more intuitive and straightforward, but they cannot solve all problems. The PDR algorithm is more complex and can solve more problems as a supplement.
 
 \begin{lstlisting}[language=scala, caption={A Code Clip to Call Formal Verification}, label=checker]
 Check.kInduction(() => new Memory, 20)
@@ -336,22 +339,22 @@ Next, we discuss the workflow of designing and formal verifying a circuit in Chi
 As shown in Figure \ref{fig: workflow}, the first step of this workflow is to clarify the design requirements of the circuit, that is, to analyze what functions the circuit needs to implement, and then it can be used as our verification requirements. At the same time, we need to design the structure of the circuit.
 
 % 接下来是使用 Chisel 来实现参数化的硬件模块，并使用上面提供的支持来将性质描述实现。这一步是比较关键的，也是最为困难的一步。本文中我们不去讨论如何使用 Chisel 来实现硬件模块，因为这不是我们的研究重点。但是如何将自然语言描述的性质，利用 ChiselFV 提供的性质描述语法来形式化表达出来，仍然是比较不容易的。一方面依赖于形式化验证工程师的经验，另一方面同时也有一些固定的套路和技巧。我们的 ChiselFV 提供了足够强大的形式化性质描述能力，可以在 Case Studies 章节中体会到。
-Next, we use Chisel to implement the hardware module with parameters and use the support provided by ChiselFV to implement the properties description. This is the most challenging step in the process. This paper does not discuss using Chisel to implement hardware modules because this is not our primary research focus. However, how to express the properties described in natural language using ChiselFV's property description syntax is still tricky. On the one hand, it depends on the experience of formal verification engineers, and on the other hand, there are also some fixed patterns and tricks. Our ChiselFV provides sufficient formal property description capabilities, which will be more intuitive to show in the next section, Case Studies.
+Next, we use Chisel to implement the hardware module with parameters and the support provided by ChiselFV to implement the properties description. This is the most challenging step in the process. This paper does not discuss using Chisel to implement hardware modules because this is not our primary research focus. However, how to express the properties described in natural language using ChiselFV's property description syntax is still tricky. On the one hand, it depends on the experience of formal verification engineers, and on the other hand, there are also some fixed patterns and tricks. Our ChiselFV provides sufficient formal property description capabilities, which will be more intuitive to show in the next section, Case Studies.
 
 % 使用 ChiselFV 对性质进行描述之后，直接调用形式化求解的函数即可进行验证。由于在我们的验证框架中，仍然使用 SystemVerilog 和 SVAs 作为其中的一个中间形式，意味着验证的对象必须要被实例化。将实例化的对象直接传入需要的验证方法中即可调用验证过程，并获得验证结果。验证结果可能是失败，那么说明该性质在电路中会被违反，同时会给出反例；也可能是成功，代表该性质会始终成立；也有可能返回未知，对于当前性质，该算法引擎无能为力，可以考虑换一个求解引擎，或者修改性质表达。
-After describing properties in ChiselFV, we can directly call the verification function to verify. Because we still use SystemVerilog and SVAs as the intermediate form in our verification framework, the object to be verified must be instantiated. We can directly pass the instantiated object to the verification method we need and get the verification result. The result may be a failure, which means that the property will be violated in the circuit, and we will get a counter-example; it may be a success, which means that the property will always be true; it may be unknown, which means that the current algorithm engine cannot solve the current property, we can consider changing the algorithm engine or modifying the property expression.
+After describing properties in ChiselFV, we can directly call the verification function to verify. Because we still use SystemVerilog and SVAs as the intermediate form in our verification framework, the object to be verified must be instantiated. We can directly pass the instantiated object to the verification method we need and get the result. The result may be a failure, which means that the property will be violated in the circuit, and we will get a counter-example; it may be a success, which means that the property will always be true; it may be unknown, which means that the current algorithm engine cannot solve the current property, we can consider changing the algorithm engine or modifying the property expression.
 
 \section{Case Studies}
 
 % 本节使用 ChiselFV 框架来形式化验证多端口内存和一个教科书中的典型五级流水设计。
-This section uses ChiselFV framework to make formal verification for multi-ported memory and a typical five-stage pipeline design in textbooks.
+This section uses the ChiselFV framework to make formal verification for multi-ported memory and a typical five-stage pipeline design in textbooks.
 
 \subsection{Multi-ported Memory}
 
 Multi-ported Memories are essential for high-performance parallel computation systems. VLIW and vector processors, CGRAs, DSPs, CMPs, and other processing systems often rely upon multi-ported memories for parallel access, hence higher performance \cite{abdelhadi2014modular}. 
 
-However, implementing multi-ported Memory is quite expensive, so FPGA manufacturers often only provide dual-ported block memory, and hardware engineers need to use the existing dual-ported block memory to design multi-ported Memory. The mainstream scheme is to use redundant dual-ported block memory, which is a two-dimensional block memory array, to implement multi-ported Memory, mainly divided into two classes. One class is based on using a small number of registers to store data, such as live-value-table (LVT) multi-ported Memory; another class is based on hiding the row number information in data, and the scheme is XOR-based multi-ported memory \cite{laforest2012multi}. 
-Base on the previous work \cite{xiang2022parameterized}, we implement three high-parameterized multi-ported memories in Chisel. Two of them are the ones we mentioned above, and the other is one-hot-encoding-based multi-ported Memory, whose code can be found in GitHub repositories \cite{mpMemory}.
+However, implementing multi-ported Memory is quite expensive, so FPGA manufacturers often only provide dual-ported block memory, and hardware engineers need to use the existing dual-ported block memory to design multi-ported Memory. The mainstream scheme is to use redundant dual-ported block memory, a two-dimensional block memory array, to implement multi-ported Memory, mainly divided into two classes. One class is based on using a small number of registers to store data, such as live-value-table (LVT) multi-ported Memory; another class is based on hiding the row number information in data, and the scheme is XOR-based multi-ported memory \cite{laforest2012multi}. 
+Based on the previous work \cite{xiang2022parameterized}, we implement three high-parameterized multi-ported memories in Chisel. Two of them are the ones we mentioned above, and the other is one-hot-encoding-based multi-ported Memory, whose code can be found in GitHub repositories \cite{mpMemory}.
 
 \begin{figure}[!htbp]
     \begin{center}
@@ -361,7 +364,7 @@ Base on the previous work \cite{xiang2022parameterized}, we implement three high
     \end{center}
 \end{figure}
 
-In this paper, our focus is not on the design itself, so we abstract the multi-ported Memory. We are concerned about whether the multi-ported Memory can meet our requirements, so its internal implementation can be shielded, and we are only concerned about its input and output. The basic IO of a multi-ported memory with m write ports, n read ports is shown in Fig \ref{fig: mpmemoryio}.
+In this paper, our focus is not on the design itself, so we abstract the multi-ported Memory. We are concerned about whether the multi-ported Memory can meet our requirements, so its internal implementation can be shielded, and we are only concerned about its input and output. The basic IO of a multi-ported memory with m write ports and n read ports is shown in Fig \ref{fig: mpmemoryio}.
 
 % 同时，我们需要设计验证需求，即我们需要多端口内存能够做到什么。可以通过 Fig 6 直观看到，性质可以描述为：
 At the same time, we need to design the verification requirements, that is, what we need the multi-ported Memory to do. As shown in Fig \ref{fig: memverify}, the property can be described as: at any time, any write port $i$ can write $data_1$ to any address $addr$, and then after any time $t$, if there is no write operation to the same address during this period, $data_2$ read from the address should be the same as $data_1$.
@@ -375,15 +378,15 @@ At the same time, we need to design the verification requirements, that is, what
 \end{figure}
 
 % 接下来，需要使用 Chisel 对该模块进行实现，同时在 Chisel 上对性质进行定义。
-Next, we need to implement the module in Chisel, and define the property. 
+Next, we need to implement the module in Chisel and define the property. 
 % Chisel 实现在仓库中，性质定义可以在 ChiselFV 项目的案例文件夹中找到。
 The Chisel implementation is in the repository \cite{mpMemory}, and the property definition can be found in the case folder of the ChiselFV project \cite{ChiselFV}.
 % 在这里，需要使用 |anyconst| 关键字构造一个任意值的 $addr$，使用一个寄存器 $data$ 存储写入 $mem_{addr}$ 的值。每当任意写端口对 $addr$ 地址发生写入时，将写入的值记录到寄存器 $data$ 中，每当任意读端口对 $addr$ 地址发生读入时，断言读出的结果和 $data$ 中的值相同。
-Here, we need to use the \verb|anyconst| keyword to construct an arbitrary value of $addr$, and use a register $data$ to store the value written to $mem_{addr}$. Whenever any write port writes to the $addr$ address, the written value is recorded in the register $data$, and whenever any read port reads from the $addr$ address, the read result is asserted to be the same as the value in $data$.
+Here, we need to use the \verb|anyconst| keyword to construct an arbitrary value of $addr$ and a register $data$ to store the value written to $mem_{addr}$. Whenever any write port writes to the $addr$ address, the written value is recorded in the register $data$, and whenever any read port reads from the $addr$ address, the read result is asserted to be the same as the value in $data$.
 % 简化了的对性质定义代码如 Listing 2 所示。其中还需要去增加上对不同端口不会同时对 addr 写入的假设。
-The simplified code for the property definition is shown in Listing \ref{memassert}. It is necessary to add the assumption that different ports do not write to $addr$ at the same time.
+The simplified code for the property definition is shown in Listing \ref{memassert}. It is necessary to add the assumption that different ports do not write to $addr$ simultaneously.
 % 模型和性质通过 k-induction 算法在 5 步内很快得到证明，详细代码在仓库中。
-The model and property are quickly proved by the k-induction algorithm within 5 steps, and the detailed code is in the repository.
+The k-induction algorithm, within five steps, quickly proves the model and property, and the detailed code is in the repository.
 
 \begin{lstlisting}[language=scala, caption={Verification Code of Multi-ported Memory Module}, label=memassert]
 val addr = anyconst(addrW)
@@ -403,19 +406,19 @@ for (i <- 0 until n) {
 \subsection{Five-stage Pipeline}
 % 在经典的体系结构教科书中给出了一个简单五级流水线。
 In the classic architecture textbooks \cite{patterson2017computer}, a simple five-stage pipeline is given. 
-% 这个处理器设计了五级流水，分别为取指、译码、执行、访存、写回。
-This processor designs a five-stage pipeline, which is divided into instruction fetch and decode, execution, memory access and write back. 
+% 这个处理器设计有五级流水，分别为取指、译码、执行、访存、写回。
+This processor design has five pipeline stages: instruction fetch and decode, execution, memory access, and write back. 
 % 它实现了 RISC-V 指令集中的 ｜ld|，|sd|, |add|, |beq| 四个典型指令。
 It implements four typical instructions in the RISC-V instruction set, including \verb|ld|, \verb|sd|, \verb|add|, and \verb|beq|.
 % 通过转发和 stalling 的方式来避免数据冒险，在分支预测上，采取假定分支不会被采用的方式来处理控制冒险，如果预测错误，则会在中间插入一条 ｜nop｜ 指令来使得流水线保持正确。
 It avoids data hazards by forwarding and stalling. On branch prediction, it adopts the way of assuming that the branch will not be taken to handle control hazards. If the prediction is wrong, a \verb|nop| instruction will be inserted in the middle to keep the pipeline correct.
 % 书中采用 Verilog 语言对该处理器进行了具体的实现。在我们的工作中，我们首先使用 Chisel 实现了处理器，然后使用 ChiselFV 框架对其进行了形式化验证，实现和验证的代码都在 GitHub 仓库中。
-The book uses the Verilog language to implement the processor. In our work, we first use Chisel to implement the processor, and then use the ChiselFV framework to formally verify it. The implementation and verification code are in the GitHub repository \cite{riscvFvChisel}.
+The book uses the Verilog language to implement the processor. In our work, we first use Chisel to implement the processor and then use the ChiselFV framework to verify it formally. The implementation and verification code are in the GitHub repository \cite{riscvFvChisel}.
 
 % 我们的验证方案主要受启发于 RISC-V Formal Verification Framework，他们是在 SystemVerilog 层次上提供了一套验证 RISC-V 处理器的框架，使用 SVA 定义性质，然后利用验证工具进行验证。
-Our verification solution is mainly inspired by the RISC-V Formal Verification Framework \cite{riscv-formal}. They provide a framework for verifying RISC-V processors at the SystemVerilog level, using SVA to define properties, and then using verification tools to verify them.
+Our verification solution is mainly inspired by the RISC-V Formal Verification Framework \cite{riscv-formal}. They provide a framework for verifying RISC-V processors at the SystemVerilog level, using SVA to define properties and then using verification tools to verify them.
 % 我们尝试将 RISC-V Formal 验证框架利用 ChiselFV 迁移到 Chisel 层次，从而实现对 RISC-V 处理器的形式化验证。
-We try to migrate the RISC-V Formal verification framework to the Chisel level by ChiselFV, so as to formally verify the RISC-V processor.
+We try to migrate the RISC-V Formal verification framework to the Chisel level by ChiselFV to verify the RISC-V processor at the Chisel level.
 
 % Chisel 版本 RISC-V Formal 框架图
 \begin{figure}[!htbp]
@@ -427,14 +430,14 @@ We try to migrate the RISC-V Formal verification framework to the Chisel level b
 \end{figure}
 
 % 验证方案方案如图 7 所示，流水线处理器实现在 Chip 模块中，Chip 模块需要向外提供 RVFI 接口，输出每条指令执行过程中的关键信息。
-The verification solution is shown in Figure \ref{fig: riscvFv}. The pipeline processor is implemented in the Chip module, and the Chip module needs to provide the RISC-V Formal Interface (RVFI) to output the key information of each instruction execution process. 
+The verification solution is shown in Figure \ref{fig: riscvFv}. The pipeline processor is implemented in the Chip module, and the Chip module needs to provide the RISC-V Formal Interface (RVFI) to output the critical information of each instruction execution process. 
 
 % RVFI 接口定义如 Listing 3 所示。
 The RVFI interface definition is shown in Listing \ref{rvfiio}.
 % 对于每条指令，拿到其指令的内容，解码的结果，执行前后 PC 寄存器的更新，源操作数，目标操作数，以及指令执行前寄存器的状态。
 For each instruction, we get its instruction content, decoding result, PC register update before and after execution, source operands, destination operands, and register state before instruction execution.
 % 从 Chip 中提取出 RVFI 是验证实现中关键的一步，需要使用 ChiselFV 中提供的时序能力来获取每条指令的执行过程中的信息，在执行完成时同时进行输出。
-Extracting RVFI from Chip is a key step in the verification implementation. We need to use the temporal ability provided by ChiselFV to get the information of each instruction execution process, and output it at the same time when the execution is completed.
+Extracting RVFI from Chip is a crucial step in the verification implementation. We need to use the temporal ability provided by ChiselFV to get the information of each instruction execution process and output it simultaneously when the execution is completed.
 
 % RVFI 定义
 \begin{lstlisting}[language=scala, caption={RVFI Definition}, label=rvfiio]
@@ -456,34 +459,35 @@ class RVFI_IO extends Bundle {
 }
 \end{lstlisting}
 
-% 接下来，需要定义 Spec 模块和 Check 模块。对于每个需要验证的指令实现或者小的性质，都可以通过单独一个 Check 模块来定义，其输入为 RVFI，通过对 RVFI 信号的分析，得出指令执行后正确的状态信息，通过 SpecOut 接口输出。定义 Check 模块，输入为来自 Chip 的 RVFI 和 来自某个 Spec 的 SpecOut，断言两份信号的一致性，从而对处理器的各个指令执行正确性进行验证。
-Next, we need to define the Spec module and Check modules. For each instruction or small property that needs to be verified, a separate Check module can be defined. Its input is RVFI, and output is SpecOut, which is the correct state information after the instruction execution. Define the Check module, the input is RVFI from the Chip and SpecOut from some Spec, and assert the consistency of the two signals to verify the correctness of the execution of each instruction of the processor.
+% 接下来，需要定义 Spec 模块和 Check 模块。对于每个需要验证的指令实现或者小的性质，都可以通过单独一个 Check 来描述，其输入为 RVFI，通过对 RVFI 信号的分析，得出指令执行后正确的状态信息，通过 SpecOut 接口输出。定义 Check 模块，输入为来自 Chip 的 RVFI 和 来自某个 Spec 的 SpecOut，断言两份信号的一致性，从而对处理器的各个指令执行正确性进行验证。
+Next, we need to define the Spec module and Check modules. For each instruction or small property that needs to be verified, a separate Check module can be 
+Its input is RVFI, and its output is SpecOut, which is the correct state information after the instruction execution. Define the Check module, the input is RVFI from the Chip and SpecOut from some Spec, and assert the consistency of the two signals to verify the correctness of the execution of each instruction of the processor.
 % 在目前的版本中，我们实现了对 |add|、|ld|、｜beq| 指令执行功能正确性的验证。
-In the current version, we have implemented the verification of the execution function correctness of the \verb|add|, \verb|ld|, and \verb|beq| instructions.
+In the current version, we have verified the correctness of the execution of the \verb|add|, \verb|ld|, and \verb|beq| instructions.
 % 具体的验证设计在 GitHub 仓库中可以找到。
 The specific verification design can be found in the GitHub repository.
 
 % 最终，我们发现了该处理器在设计上有一个错误。ChiselFV 给出了一个执行会发生错误的执行路径。对于 |beq| 指令，需要比较两个源操作数的大小，但是在原来的设计中，这两个源操作数并没有考虑到数据冒险，而是直接从寄存器中拿到的数据，这是不合理的。之后，我们在 Chisel 版本上修改了设计，并通过了相关的验证。
-Eventually, we found that there was an error in the design of this processor. ChiselFV gave an execution path that would fail. For the \verb|beq| instruction, we need to compare the value of the two source operands, but in the original design, these two source operands were not considered to be data hazards, but were directly taken from the register data, which is unreasonable. Later, we modified the design on the Chisel version and passed the relevant verification check.
+Eventually, we found that there was an error in the design of this processor. ChiselFV gave an execution path that would fail. For the \verb|beq| instruction, we need to compare the value of the two source operands, but in the original design, these two source operands were not considered data hazards. Still, they were directly taken from the register, which is unreasonable. Later, we modified the design on the Chisel version and passed the relevant verification check.
 
 
 
 \section{Related Work}
 This section presents a brief overview of the formal hardware verification in hardware.
 
-Formal verification is divided into two directions: Theorem Proving \cite{Hoare69}, and Model Checking \cite{clarke2018handbook}. Theorem Proving relies on high order logic and uses mathematical structures to build formulas that correspond to the system. And the verification process is the evaluation of these formulas. However, it is difficult to automate. This means that the verification process needs to be assisted by engineers. Model Checking is a method that can be fully automated, but it has the problem of state explosion. To counter this problem, new technologies are being introduced to reduce the state space of the transition system.
+Formal verification is divided into two directions: Theorem Proving \cite{Hoare69}, and Model Checking \cite{clarke2018handbook}. Theorem Proving relies on high-order logic and uses mathematical structures to build formulas corresponding to the system. And the verification process is the evaluation of these formulas. However, it isn't easy to automate. This means that the verification process needs to be assisted by engineers. Model Checking is a method that can be fully automated but has a state explosion problem. To counter this problem, new technologies are being introduced to reduce the state space of the transition system.
 
-At the turn of the last century, a new generation of Boolean satisfiability (SAT) solvers such as Grasp \cite{SilvaS96} and Chaff \cite{MoskewiczMZZM01} brought about a leap in the performance and scalability of satisfiability checkers for propositional formulas, and the hardware model checking technique particularly benefited from the advances of SAT solvers \cite{vizel2015boolean}. At the same time, Satisfiability Modulo Theories (SMT) \cite{barrett2018satisfiability} has also been rapidly evolving. 
+At the turn of the last century, a new generation of Boolean satisfiability (SAT) solvers such as Grasp \cite{SilvaS96} and Chaff \cite{MoskewiczMZZM01} brought about a leap in the performance and scalability of satisfiability checkers for propositional formulas. The hardware model checking technique particularly benefited from the advances of SAT solvers \cite{vizel2015boolean}. At the same time, Satisfiability Modulo Theories (SMT) \cite{barrett2018satisfiability} has also been rapidly evolving. 
 
 Therefore, many model checking algorithms based on SAT/SMT solvers have been widely applied in hardware verification, such as BMC \cite{BiereCCZ99}, k-induction \cite{tinelli2012smt}, IC3/PDR \cite{Bradley11}, etc.
 
-Besides the algorithms, the easy-to-use, scalable, high-performance, and available in industrial environments hardware model checking tools are also an important research direction. Aina Niemetz, Clifford Wolf's work \cite{niemetz2018btor2} proposed BtorMC, a model checker built on Boolector. BtorMC supports the format Btor2, a new word-level model-checking and witness format, and also proposed by them. Pono, a flexible and extensible SMT-based model checker, is designed to be both a research platform for developing and improving model checking algorithms, as well as a performance-competitive tool that can be used for academic and industry verification applications \cite{mann2021pono}. It supports the verification format Btor2 and SMV \cite{clarke1996symbolic}. SymbiYosys is an open-source frontend driver program for Yosys-based formal hardware verification flow \cite{SymbiYosys}, and its team has already released a commercial EDA tool for hardware verification, Tabby CAD Suite. SymbiYosys supports direct verification of assertions in SystemVerilog.
+Besides the algorithms, the easy-to-use, scalable, high-performance, and available in industrial environments hardware model checking tools are also an important research direction. Aina Niemetz, Clifford Wolf's work \cite{niemetz2018btor2} proposed BtorMC, a model checker built on Boolector. BtorMC supports the format Btor2, a new word-level model checking and witness format also proposed by them. Pono, a flexible and extensible SMT-based model checker, is designed to be both a research platform for developing and improving model checking algorithms and a performance-competitive tool that can be used for academic and industry verification applications \cite{mann2021pono}. It supports the verification format Btor2 and SMV \cite{clarke1996symbolic}. SymbiYosys is an open-source frontend driver program for Yosys-based formal hardware verification flow \cite{SymbiYosys}, and its team has already released a commercial EDA tool for hardware verification, Tabby CAD Suite. SymbiYosys supports direct verification of assertions in SystemVerilog.
 
 \section{Conclusion and Future Work}
 
-In this paper, we introduce ChiselFV, a formal verification framework for Chisel. ChiselFV provides a workflow for formal verification of Chisel modules, which can be combined with Chisel-based hardware design development to significantly improve the efficiency and simplicity of hardware development and verification. ChiselFV provides strong property description support, which enables verification of verification work that was previously done at the low-level RTL level, but can be done in Chisel, improving the level of hardware verification.
+In this paper, we introduce ChiselFV, a formal verification framework for Chisel. ChiselFV provides a workflow for formal verification of Chisel modules, which can be combined with Chisel-based hardware design development to significantly improve the efficiency and simplicity of hardware development and verification. ChiselFV provides strong property description support, which enables verification of verification work previously done at the low-level RTL level, but can be done in Chisel, improving the level of hardware verification.
 
-In the future, we will provide more advanced support for Chisel's formal verification. Currently, our verification backend is to convert it to SVAs and then perform verification, which means we cannot symbolize the module's parameters in Chisel, and we must instantiate it before verification. We will further develop a verification backend for Chisel, which will be able to symbolize the parameters of the modules for formal verification. We are also actively researching new verification algorithms, which we hope to develop into high-efficiency verification algorithms and integrate them into ChiselFV.
+In the future, we will provide more advanced support for Chisel's formal verification. Currently, our verification backend is to convert it to SVAs and then perform the verification process. This means we cannot symbolize the module's parameters in Chisel and must instantiate it before verification. We will further develop a verification backend for Chisel, which will be able to symbolize the parameters of the modules for formal verification. We are also actively researching new verification algorithms, which we hope to develop into high-efficiency verification algorithms and integrate into ChiselFV.
 
 % \begin{table}[htbp]
 % \caption{Table Type Styles}
