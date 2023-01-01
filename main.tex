@@ -26,6 +26,19 @@
 \usepackage{lstautogobble}  % Fix relative indenting
 \usepackage{color}          % Code coloring
 \usepackage{zi4}            % Nice font
+\usepackage{lipsum}
+
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+\makeatletter
+\def\footnoterule{\kern-3\p@
+  \hrule \@width 2in \kern 2.6\p@} % the \hrule is .4pt high
+\makeatother
 
 \definecolor{bluekeywords}{rgb}{0.13, 0.13, 1}
 \definecolor{graycomments}{rgb}{0.5, 0.5, 0.5}
@@ -79,8 +92,34 @@ framexleftmargin=15pt}
 % \thanks{Identify applicable funding agency here. If none, delete this.}
 }
 
+\author{\IEEEauthorblockN{1\textsuperscript{st} Mufan Xiang}
+\IEEEauthorblockA{
+    % \textit{Shanghai Key Laboratory of Trustworthy Computing} \\
+\textit{East China Normal University}\\
+Shanghai, China \\
+morvan@stu.ecnu.edu.cn}
+\and
+\IEEEauthorblockN{2\textsuperscript{nd} Yongjian Li$^1$}
+\IEEEauthorblockA{
+    % \textit{State Key Laboratory of Computer Science} \\
+\textit{Institute of Software, Chinese Academy of Sciences}\\
+Beijing, China \\
+lyj238@gmail.com}
+\and
+\IEEEauthorblockN{3\textsuperscript{rd} Yongxin Zhao$^1$}
+\IEEEauthorblockA{
+    % \textit{Shanghai Key Laboratory of Trustworthy Computing} \\
+\textit{East China Normal University}\\
+Shanghai, China \\
+yxzhao@sei.ecnu.edu.cn}
+\thanks{$^1$Corresponding author}
+}
 
 \maketitle
+
+\blfootnote{
+    This work is supported by National Key Research and Development Program (2020AAA0107800), National Natural Science Foundation of China (NSFC 62272165), the “Digital Silk Road” Shanghai International Joint Lab of Trustworthy Intelligent Software (Grant No. 22510750100), Shanghai Trusted Industry Internet Software Collaborative Innovation Center, and the Strategic Priority Research Program of the Chinese Academy of Sciences, Grant No. XDA0320000 and XDA0320300.
+}
 
 % 现代硬件设计越来越复杂 -> 敏捷开发技术 -> Chisel -> Formal for Chisel -> ChiselFV
 \begin{abstract}
