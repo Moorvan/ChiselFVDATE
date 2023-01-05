@@ -92,27 +92,34 @@ framexleftmargin=15pt}
 % \thanks{Identify applicable funding agency here. If none, delete this.}
 }
 
-\author{\IEEEauthorblockN{1\textsuperscript{st} Mufan Xiang}
-\IEEEauthorblockA{
-    % \textit{Shanghai Key Laboratory of Trustworthy Computing} \\
-\textit{East China Normal University}\\
-Shanghai, China \\
-morvan@stu.ecnu.edu.cn}
-\and
-\IEEEauthorblockN{2\textsuperscript{nd} Yongjian Li$^1$}
-\IEEEauthorblockA{
-    % \textit{State Key Laboratory of Computer Science} \\
-\textit{Institute of Software, Chinese Academy of Sciences}\\
-Beijing, China \\
-lyj238@gmail.com}
-\and
-\IEEEauthorblockN{3\textsuperscript{rd} Yongxin Zhao$^1$}
-\IEEEauthorblockA{
-    % \textit{Shanghai Key Laboratory of Trustworthy Computing} \\
-\textit{East China Normal University}\\
-Shanghai, China \\
-yxzhao@sei.ecnu.edu.cn}
-\thanks{$^1$Corresponding author}
+% \author{\IEEEauthorblockN{Mufan Xiang}
+% \IEEEauthorblockA{
+%     % \textit{Shanghai Key Laboratory of Trustworthy Computing} \\
+% \textit{Shanghai Key Laboratory of Trustworthy Computing}\\
+% Shanghai, China \\
+% morvan@stu.ecnu.edu.cn}
+% \and
+% \IEEEauthorblockN{Yongjian Li$^*$}
+% \IEEEauthorblockA{
+%     % \textit{State Key Laboratory of Computer Science} \\
+% \textit{Institute of Software, Chinese Academy of Sciences}\\
+% Beijing, China \\
+% lyj238@gmail.com}
+% \and
+% \IEEEauthorblockN{Yongxin Zhao$^*$}
+% \IEEEauthorblockA{
+%     % \textit{Shanghai Key Laboratory of Trustworthy Computing} \\
+% \textit{Shanghai Key Laboratory of Trustworthy Computing}\\
+% Shanghai, China \\
+% yxzhao@sei.ecnu.edu.cn}
+% \thanks{$^*$Corresponding author}
+% }
+
+\author{
+\IEEEauthorblockN{Mufan Xiang\IEEEauthorrefmark{2}, Yongjian Li\IEEEauthorrefmark{3}$^*$ \thanks{ $^*$Corresponding author}, Yongxin Zhao\IEEEauthorrefmark{2}\IEEEauthorrefmark{3}$^*$ }
+  
+\IEEEauthorblockA{\IEEEauthorrefmark{2} Shanghai Key Laboratory of Trustworthy Computing, East China Normal University, Shanghai, China} 
+\IEEEauthorblockA{\IEEEauthorrefmark{3} State Key Laboratory of Computer Science, Institute of Software, Chinese Academy of Sciences, Beijing, China}
 }
 
 \maketitle
@@ -156,8 +163,8 @@ Currently, Chisel is mainly used to construct hardware generators at the high le
 
 % 所以我们的工作就是把传统 HDLs 中的验证能力在 Chisel 层次进行实现
 % 因此我们选择直接在 Chisel 上进行性质定义，并且致力于使 Chisel 具有和传统 HDLs 相同能力的形式化支持。
-Therefore, we choose to define properties directly on Chisel and strive to make Chisel have the same formal support as traditional HDLs. 
-Our main contribution is to propose ChiselFV, a formal verification framework for Chisel, which can be found in the GitHub repository \cite{ChiselFV}.
+Therefore, we choose to define properties on Chisel and strive to make Chisel have the same formal support as traditional HDLs. 
+Our main contribution is to propose ChiselFV, which can be found in the GitHub repository \cite{ChiselFV}.
 We also provide the workflow of formal verification on the Chisel level and detailed application of ChiselFV on the actual case. The contribution of this work is as follows:
 
 \begin{itemize}
@@ -171,14 +178,14 @@ We also provide the workflow of formal verification on the Chisel level and deta
 
 This paper is organized into four sections. 
 % Section II uses Memory's example to explain the apparent advantages of formal verification on the Chisel level.
-Section II details ChiselFV and the workflow of formal verification on Chisel modules.
+Section II details the design and supported verification ability of ChiselFV.
 % 第三节中将多端口内存和一个五级流水线设计处理器作为案例，描述基于 ChiselFV 的验证过程。
 Section III describes the formal verification process of a multi-ported memory and a five-stage pipeline processor based on ChiselFV.
 Related work is in Section IV. Section V concludes.
 
 \section{Formal Verification in Chisel}
 
-This section gives the structure of ChiselFV, details the property description and verification engine support in ChiselFV, and the methodology to perform formal verification on Chisel using ChiselFV.
+This section gives the structure of ChiselFV, details the property description and verification engine support in ChiselFV, and the methodology to verify with ChiselFV.
 
 \subsection{Framework Structure}
 
@@ -195,12 +202,12 @@ The figure Fig \ref{fig: structure} shows the structure of ChiselFV.
     \end{center}
 \end{figure}
 
-As shown in Fig \ref{fig: structure}, ChiselFV is mainly an extension of Chisel's SystemVerilog generation and adds support for formal verification syntax. It also integrates the verification frontend and backend based on SymbiYosys, enabling one-key verification. The SystemVerilog generation is performed by calling the SystemVerilog generation process in Chisel. 
+As shown in Fig \ref{fig: structure}, ChiselFV is mainly an extension of Chisel's SystemVerilog generation and adds support for formal verification syntax. It also integrates the verification frontend and backend based on SymbiYosys, enabling one-key verification. The SystemVerilog generation is performed by calling the generation process in Chisel.
 % 对于性质描述，ChiselFV 会将在 Chisel 定义的性质编译为 SVA 代码，对于复杂的性质描述，则会生成一些辅助电路来完成性质定义。
 For property descriptions, ChiselFV compiles the properties defined in Chisel into SVA code. Some auxiliary circuits will be generated to complete the property definition for complex property descriptions.
 And the configuration generator generates SymbiYosys-supported verification tasks configuration file .sby. 
 
-Hardware developers can construct hardware modules in Chisel, and Chisel's compiler can compile Chisel modules to SystemVerilog code. The starting point of our work is to inject support for formal property descriptions in this stage.
+Hardware developers can construct hardware modules in Chisel, and Chisel's compiler can compile Chisel modules to SystemVerilog. The starting point of our work is to inject support for formal property descriptions in this stage.
 Besides the SystemVerilog generation, we also add support for generating SystemVerilog Assertions and verification configuration files.
 
 \begin{figure}[!htbp]
@@ -218,17 +225,17 @@ Such as to achieve the support for the temporal property description introduced 
 % 利用函数封装，提供接口的方式有一定的局限性，它要求保证性质的描述可以用 Chisel 提供的硬件描述能力来实现，而我们采用的第二种方式，动态模版，则是更加灵活。
 Using function encapsulation and providing interfaces, there is a specific limitation, which needs to ensure that Chisel's hardware description abilities can implement the property description, and the second technique, dynamic template, is more flexible.
 % 动态模版主要依赖于 Chisel 提供的 \verb|BlackBox| 类，通过编写 SystemVerilog 代码片段，并通过让其继承 \verb|BlackBox| 将其封装为一个新的 Chisel 模块，其将在 Chisel 模块编译时进行注入。同时在编写 SystemVerilog 片段时可以将外部的参数传入到该片段中，从而在编译时，模版会自动应用这些参数进行动态地实例化。
-Dynamic template mainly depends on the \verb|BlackBox| class provided by Chisel. We write SystemVerilog code fragments and encapsulate them into a new Chisel module by inheriting \verb|BlackBox|, which will be injected into the Chisel module during compilation. At the same time, we can pass external parameters to the code fragment, and the template will automatically apply them to the instance dynamically during compilation.
+Dynamic template mainly depends on the \verb|BlackBox| class provided by Chisel. We write SystemVerilog fragments and encapsulate them into a new Chisel module by inheriting \verb|BlackBox|, which will be injected into the Chisel module during compilation. At the same time, we can pass external parameters to the code fragment, and the template will automatically apply them to the instance dynamically during compilation.
 
 % 最后，我们提供了验证配置文件的自动生成。
 Finally, we provide the automatic generation of verification configuration files.
 % ChiselFV 可以根据用户指定的验证方法和参数，生成对应的验证配置文件。这里主要采用了 sby 格式，它是由 SymbiYosys 支持。 ChiselFV 同时可以自动调用后端求解算法来根据具体的验证算法和参数，来对生成的模型进行验证。
-ChiselFV can generate the corresponding verification configuration file according to the verification algorithm and parameters specified by the user. Here we use the .sby format, which is supported by SymbiYosys \cite{SymbiYosys}. ChiselFV can also automatically call the backend algorithm to verify the hardware model according to the specific verification algorithm and parameters.
+ChiselFV can generate the corresponding verification configuration file according to the verification algorithm and parameters specified by the user. Here we use the .sby format, which is supported by SymbiYosys \cite{SymbiYosys}. ChiselFV can also automatically call the backend to verify according to the specific verification algorithm and parameters.
 
 \subsection{Formal Description Syntax}
 
 % 下面我们给出在 ChiselFV 中支持的性质描述语法的定义。
-We define the property description syntax supported by ChiselFV in Fig \ref{fig: syntax}.
+We define the property description syntax in Fig \ref{fig: syntax}.
 The primary verification task in ChiselFV is: when the assumption defined in \verb|assume| block is true and whether the circuit assertion defined in \verb|assert| block is true or not. 
 
 \begin{figure}[!htbp]
@@ -262,7 +269,7 @@ The primary verification task in ChiselFV is: when the assumption defined in \ve
 \end{figure}
 
 % 对于电路的性质定义，基本上继承在 Chisel 中的语法，对于 Chisel 中返回值为 \verb|Bool| 的数据节点可以作为性质描述（定义为 \langle booleanExpr \rangle），它可以由数据变量之间的比较结果构成。
-For the property definition, the basic syntax is inherited from Chisel. It means that the data nodes with return type \verb|Bool| in Chisel can be defined as property descriptions (defined as $\langle \text{booleanExpr} \rangle$ here), which can be constructed by the comparison results between data variables (defined as $\langle \text{valueExpr} \rangle$ here).
+For the property definition, the basic syntax is inherited from Chisel. It means that the data nodes with return type \verb|Bool| in Chisel can be defined as property descriptions (defined as $\langle \text{booleanExpr} \rangle$ here).
 
 % 同时，我们还主要增强了对时序性质的描述支持，以及对自由常量的支持。接下来给出详细介绍。
 In addition, we mainly enhance the description support for temporal properties and free constants. The following gives a detailed introduction.
@@ -351,7 +358,7 @@ This section uses the ChiselFV framework to make formal verification for multi-p
 
 \subsection{Multi-ported Memory}
 
-Multi-ported Memories are essential for high-performance parallel computation systems. VLIW and vector processors, CGRAs, DSPs, CMPs, and other processing systems often rely upon multi-ported memories for parallel access, hence higher performance \cite{abdelhadi2014modular}. 
+Multi-ported Memories are essential for high-performance parallel computation systems. VLIW and vector processors, and other processing systems often rely upon multi-ported memories for parallel access, hence higher performance \cite{abdelhadi2014modular}. 
 
 However, implementing multi-ported Memory is quite expensive, so FPGA manufacturers often only provide dual-ported block memory, and hardware engineers need to use the existing dual-ported block memory to design multi-ported Memory. 
 % The mainstream scheme is to use redundant dual-ported block memory, a two-dimensional block memory array, to implement multi-ported Memory, mainly divided into two classes. One class is based on using a small number of registers to store data, such as live-value-table (LVT) multi-ported Memory; another class is based on hiding the row number information in data, and the scheme is XOR-based multi-ported memory \cite{laforest2012multi}. 
@@ -434,7 +441,7 @@ We try to migrate the RISC-V Formal verification framework to the Chisel level b
 \end{figure}
 
 % 验证方案方案如图 7 所示，流水线处理器实现在 Chip 模块中，Chip 模块需要向外提供 RVFI 接口，输出每条指令执行过程中的关键信息。
-The verification solution is shown in Figure \ref{fig: riscvFv}. The pipeline processor is implemented in the Chip module, and the Chip module needs to provide the RISC-V Formal Interface (RVFI) to output the critical information of each instruction execution process. 
+The verification solution is shown in Figure \ref{fig: riscvFv}. The pipeline processor is implemented in the Chip module, and the Chip needs to provide the RISC-V Formal Interface (RVFI) to output the critical information of each instruction execution process. 
 
 % RVFI 接口定义如 Listing 3 所示。
 The RVFI interface definition is shown in Listing \ref{rvfiio}.
