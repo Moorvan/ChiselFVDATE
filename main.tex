@@ -116,7 +116,7 @@ framexleftmargin=15pt}
 % }
 
 \author{
-\IEEEauthorblockN{Mufan Xiang\IEEEauthorrefmark{2}, Yongjian Li\IEEEauthorrefmark{3}$^*$ \thanks{ $^*$Corresponding author}, Yongxin Zhao\IEEEauthorrefmark{2}\IEEEauthorrefmark{3}$^*$ }
+\IEEEauthorblockN{Mufan Xiang\IEEEauthorrefmark{2}, Yongjian Li\IEEEauthorrefmark{3}$^*$ \thanks{ $^*$Corresponding authors}, Yongxin Zhao\IEEEauthorrefmark{2}\IEEEauthorrefmark{3}$^*$ }
   
 \IEEEauthorblockA{\IEEEauthorrefmark{2} Shanghai Key Laboratory of Trustworthy Computing, East China Normal University, Shanghai, China} 
 \IEEEauthorblockA{\IEEEauthorrefmark{3} State Key Laboratory of Computer Science, Institute of Software, Chinese Academy of Sciences, Beijing, China}
@@ -530,6 +530,7 @@ This section presents a brief overview of the formal verification in hardware.
 Formal verification of hardware mainly uses model checking.
 % Formal verification is divided into two directions: Theorem Proving \cite{Hoare69}, and Model Checking \cite{clarke2018handbook}. Theorem Proving relies on high-order logic and uses mathematical structures to build formulas corresponding to the system. And the verification process is the evaluation of these formulas. However, it isn't easy to automate. This means that the verification process needs to be assisted by engineers.
 Model Checking is a method that can be fully automated but has a state explosion problem. To counter this problem, new technologies are introduced to reduce the state space of the transition system.
+
 
 At the turn of the last century, a new generation of Boolean satisfiability (SAT) solvers such as Chaff \cite{MoskewiczMZZM01} and Satisfiability Modulo Theories (SMT) \cite{barrett2018satisfiability} brought about a leap in the performance and scalability. 
 Therefore, many model checking algorithms based on SAT/SMT solvers have been widely applied in hardware verification, such as BMC \cite{BiereCCZ99}, k-induction \cite{tinelli2012smt}, IC3/PDR \cite{Bradley11}, etc.
